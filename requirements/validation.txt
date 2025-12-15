@@ -45,12 +45,12 @@ bleach[css]==6.3.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
-boto3==1.42.6
+boto3==1.42.9
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   django-ses
-botocore==1.42.6
+botocore==1.42.9
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -215,7 +215,7 @@ django-ses==4.4.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
-django-simple-history==3.10.1
+django-simple-history==3.11.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -645,7 +645,7 @@ typing-extensions==4.15.0
     #   edx-opaque-keys
     #   exceptiongroup
     #   referencing
-tzdata==2025.2
+tzdata==2025.3
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -661,7 +661,7 @@ uritemplate==4.2.0
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   drf-spectacular
-urllib3==2.6.1
+urllib3==2.6.2
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt

@@ -24,9 +24,9 @@ billiard==4.2.4
     # via celery
 bleach[css]==6.3.0
     # via -r requirements/base.in
-boto3==1.42.6
+boto3==1.42.9
     # via django-ses
-botocore==1.42.6
+botocore==1.42.9
     # via
     #   boto3
     #   s3transfer
@@ -119,7 +119,7 @@ django-model-utils==5.0.0
     #   edx-rbac
 django-ses==4.4.0
     # via -r requirements/base.in
-django-simple-history==3.10.1
+django-simple-history==3.11.0
     # via -r requirements/base.in
 django-waffle==5.0.0
     # via
@@ -297,13 +297,13 @@ typing-extensions==4.15.0
     #   edx-opaque-keys
     #   exceptiongroup
     #   referencing
-tzdata==2025.2
+tzdata==2025.3
     # via kombu
 tzlocal==5.3.1
     # via celery
 uritemplate==4.2.0
     # via drf-spectacular
-urllib3==2.6.1
+urllib3==2.6.2
     # via
     #   botocore
     #   requests

@@ -74,6 +74,7 @@ class MinimalSubscriptionPlanSerializer(serializers.ModelSerializer):
             'should_auto_apply_licenses',
             'created',
             'plan_type',
+            'product',
             'salesforce_opportunity_line_item',
         ]
 

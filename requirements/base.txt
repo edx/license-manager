@@ -24,9 +24,9 @@ billiard==4.2.4
     # via celery
 bleach[css]==6.3.0
     # via -r requirements/base.in
-boto3==1.42.9
+boto3==1.42.14
     # via django-ses
-botocore==1.42.9
+botocore==1.42.14
     # via
     #   boto3
     #   s3transfer
@@ -117,7 +117,7 @@ django-model-utils==5.0.0
     #   -r requirements/base.in
     #   edx-celeryutils
     #   edx-rbac
-django-ses==4.4.0
+django-ses==4.5.0
     # via -r requirements/base.in
 django-simple-history==3.11.0
     # via -r requirements/base.in
@@ -275,13 +275,13 @@ six==1.17.0
     #   edx-auth-backends
     #   edx-rbac
     #   python-dateutil
-social-auth-app-django==5.6.0
+social-auth-app-django==5.7.0
     # via edx-auth-backends
-social-auth-core==4.8.1
+social-auth-core==4.8.3
     # via
     #   edx-auth-backends
     #   social-auth-app-django
-sqlparse==0.5.4
+sqlparse==0.5.5
     # via django
 stevedore==5.6.0
     # via

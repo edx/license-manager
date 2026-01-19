@@ -24,18 +24,18 @@ billiard==4.2.4
     # via celery
 bleach[css]==6.3.0
     # via -r requirements/base.in
-boto3==1.42.9
+boto3==1.42.30
     # via django-ses
-botocore==1.42.9
+botocore==1.42.30
     # via
     #   boto3
     #   s3transfer
-celery==5.6.0
+celery==5.6.2
     # via
     #   -r requirements/base.in
     #   django-celery-results
     #   edx-celeryutils
-certifi==2025.11.12
+certifi==2026.1.4
     # via requests
 cffi==2.0.0
     # via
@@ -65,7 +65,7 @@ defusedxml==0.7.1
     # via
     #   python3-openid
     #   social-auth-core
-django==5.2.9
+django==5.2.10
     # via
     #   -c requirements/common_constraints.txt
     #   -r requirements/base.in
@@ -117,7 +117,7 @@ django-model-utils==5.0.0
     #   -r requirements/base.in
     #   edx-celeryutils
     #   edx-rbac
-django-ses==4.4.0
+django-ses==4.6.0
     # via -r requirements/base.in
 django-simple-history==3.11.0
     # via -r requirements/base.in
@@ -176,8 +176,6 @@ edx-toggles==5.4.1
     # via
     #   -r requirements/base.in
     #   edx-auth-backends
-exceptiongroup==1.3.1
-    # via celery
 idna==3.11
     # via requests
 inflection==0.5.1
@@ -190,11 +188,11 @@ jmespath==1.0.1
     #   botocore
 jsonfield==3.2.0
     # via edx-celeryutils
-jsonschema==4.25.1
+jsonschema==4.26.0
     # via drf-spectacular
 jsonschema-specifications==2025.9.1
     # via jsonschema
-kombu==5.6.1
+kombu==5.6.2
     # via celery
 markupsafe==3.0.3
     # via jinja2
@@ -212,7 +210,7 @@ ply==3.11
     # via djangoql
 prompt-toolkit==3.0.52
     # via click-repl
-psutil==7.1.3
+psutil==7.2.1
     # via edx-django-utils
 pycparser==2.23
     # via cffi
@@ -223,9 +221,9 @@ pyjwt[crypto]==2.10.1
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   social-auth-core
-pymongo==4.15.5
+pymongo==4.16.0
     # via edx-opaque-keys
-pynacl==1.6.1
+pynacl==1.6.2
     # via edx-django-utils
 python-dateutil==2.9.0.post0
     # via
@@ -275,13 +273,13 @@ six==1.17.0
     #   edx-auth-backends
     #   edx-rbac
     #   python-dateutil
-social-auth-app-django==5.6.0
+social-auth-app-django==5.7.0
     # via edx-auth-backends
-social-auth-core==4.8.1
+social-auth-core==4.8.3
     # via
     #   edx-auth-backends
     #   social-auth-app-django
-sqlparse==0.5.4
+sqlparse==0.5.5
     # via django
 stevedore==5.6.0
     # via
@@ -295,7 +293,6 @@ tinycss2==1.4.0
 typing-extensions==4.15.0
     # via
     #   edx-opaque-keys
-    #   exceptiongroup
     #   referencing
 tzdata==2025.3
     # via kombu
@@ -303,7 +300,7 @@ tzlocal==5.3.1
     # via celery
 uritemplate==4.2.0
     # via drf-spectacular
-urllib3==2.6.2
+urllib3==2.6.3
     # via
     #   botocore
     #   requests

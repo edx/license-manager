@@ -143,7 +143,6 @@ class EmailTaskTests(TestCase):
                 'enterprise_customer_name': self.enterprise_name,
                 'enterprise_sender_alias': self.enterprise_sender_alias,
                 'enterprise_contact_email': self.contact_email,
-                'enterprise_default_language': 'en',
             }
             expected_recipient = {
                 'attributes': {'email': user_email},
@@ -153,6 +152,7 @@ class EmailTaskTests(TestCase):
                 },
             }
             expected_recipient['attributes'].update(get_license_tracking_properties(expected_license))
+            expected_recipient['attributes'].update({'enterprise_default_language': 'en'})
             expected_recipient['trigger_properties'] = expected_trigger_properties
             expected_recipients.append(expected_recipient)
 
@@ -243,7 +243,6 @@ class EmailTaskTests(TestCase):
                     'enterprise_customer_name': self.enterprise_name,
                     'enterprise_sender_alias': self.enterprise_sender_alias,
                     'enterprise_contact_email': self.contact_email,
-                    'enterprise_default_language': 'en',
                 }
                 expected_recipient = {
                     'attributes': {'email': user_email},
@@ -253,6 +252,7 @@ class EmailTaskTests(TestCase):
                     },
                 }
                 expected_recipient['attributes'].update(get_license_tracking_properties(expected_license))
+                expected_recipient['attributes'].update({'enterprise_default_language': 'en'})
                 expected_recipient['trigger_properties'] = expected_trigger_properties
                 expected_recipients.append(expected_recipient)
 
@@ -327,7 +327,7 @@ class EmailTaskTests(TestCase):
         mock_send_message = mock_braze_client.return_value.send_campaign_message
         actual_recipients = mock_send_message.call_args_list[0][1]['recipients']
         for recipient in actual_recipients:
-            assert recipient['trigger_properties']['enterprise_default_language'] == ''
+            assert recipient['attributes']['enterprise_default_language'] == ''
 
     @mock.patch('license_manager.apps.api.tasks.BrazeApiClient', autospec=True, return_value=mock.MagicMock())
     @mock.patch('license_manager.apps.api.tasks.EnterpriseApiClient', return_value=mock.MagicMock())
@@ -353,7 +353,7 @@ class EmailTaskTests(TestCase):
         mock_send_message = mock_braze_client.return_value.send_campaign_message
         actual_recipients = mock_send_message.call_args_list[0][1]['recipients']
         for recipient in actual_recipients:
-            assert recipient['trigger_properties']['enterprise_default_language'] == ''
+            assert recipient['attributes']['enterprise_default_language'] == ''
 
     def _verify_mock_send_email_arguments(self, send_email_args):
         """
@@ -401,10 +401,12 @@ class EmailTaskTests(TestCase):
             'enterprise_customer_name': self.enterprise_name,
             'enterprise_sender_alias': self.enterprise_sender_alias,
             'enterprise_contact_email': self.contact_email,
-            'enterprise_default_language': 'en',
         }
         expected_recipient = {
-            'attributes': {'email': self.user_email},
+            'attributes': {
+                'email': self.user_email,
+                'enterprise_default_language': 'en',
+            },
             'user_alias': {
                 'alias_label': ENTERPRISE_BRAZE_ALIAS_LABEL,
                 'alias_name': self.user_email,
@@ -452,8 +454,8 @@ class EmailTaskTests(TestCase):
         tasks.send_post_activation_email_task(self.enterprise_uuid, self.user_email)
 
         # Verify that enterprise_default_language is empty string when source is None
-        actual_trigger_properties = mock_braze_client().send_campaign_message.call_args[1]['trigger_properties']
-        assert actual_trigger_properties['enterprise_default_language'] == ''
+        actual_recipients = mock_braze_client().send_campaign_message.call_args[1]['recipients']
+        assert actual_recipients[0]['attributes']['enterprise_default_language'] == ''
 
     @mock.patch('license_manager.apps.api.tasks.EnterpriseApiClient', return_value=mock.MagicMock())
     @mock.patch('license_manager.apps.api.tasks.BrazeApiClient', return_value=mock.MagicMock())

@@ -199,10 +199,10 @@ def _batch_notify_or_remind_assigned_emails(
             'enterprise_customer_name': enterprise_name,
             'enterprise_sender_alias': enterprise_sender_alias,
             'enterprise_contact_email': enterprise_contact_email,
-            'enterprise_default_language': enterprise_default_language,
         }
         recipient = _aliased_recipient_object_from_email(user_email)
         recipient['attributes'].update(get_license_tracking_properties(pending_license))
+        recipient['attributes'].update({'enterprise_default_language': enterprise_default_language})
         recipient['trigger_properties'] = trigger_properties
         recipients.append(recipient)
 
@@ -302,9 +302,9 @@ def send_post_activation_email_task(enterprise_customer_uuid, user_email):
         'enterprise_customer_name': enterprise_name,
         'enterprise_sender_alias': enterprise_sender_alias,
         'enterprise_contact_email': enterprise_contact_email,
-        'enterprise_default_language': enterprise_default_language,
     }
     recipient = _aliased_recipient_object_from_email(user_email)
+    recipient['attributes'].update({'enterprise_default_language': enterprise_default_language})
 
     try:
         braze_client_instance = BrazeApiClient()

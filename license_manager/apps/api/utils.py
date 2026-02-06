@@ -18,7 +18,9 @@ from edx_django_utils.monitoring import set_custom_attribute
 from edx_rbac.utils import get_decoded_jwt
 from rest_framework.exceptions import ParseError, status
 
+from license_manager.apps.api_client.braze import BrazeApiClient
 from license_manager.apps.subscriptions import constants
+from license_manager.apps.subscriptions.constants import ENTERPRISE_BRAZE_ALIAS_LABEL
 from license_manager.apps.subscriptions.exceptions import (
     LicenseActivationError,
     LicenseNotFoundError,
@@ -352,3 +354,38 @@ def set_datadog_tags(tags_dict):
     """
     for key, value in tags_dict.items():
         set_custom_attribute(key, value)
+
+
+def create_braze_alias_for_emails(user_emails):
+    """
+    Creates Braze aliases for the given email addresses.
+
+    This is a utility function to DRY up the common pattern of creating a BrazeApiClient
+    instance and calling create_braze_alias with the ENTERPRISE_BRAZE_ALIAS_LABEL.
+
+    Args:
+        user_emails (list or str): A list of email addresses, or a single email address string.
+                                   If a single email string is provided, it will be converted to a list.
+
+    Returns:
+        BrazeApiClient: The Braze client instance used to create the aliases.
+                       This allows calling code to chain additional operations like send_campaign_message.
+
+    Raises:
+        BrazeClientError: If there's an error communicating with the Braze API.
+
+    Example:
+        # Simple usage - just create aliases
+        create_braze_alias_for_emails(['user1@example.com', 'user2@example.com'])
+
+        # Chain with send_campaign_message
+        braze_client = create_braze_alias_for_emails(['user@example.com'])
+        braze_client.send_campaign_message(campaign_id, recipients=recipients)
+    """
+    # Convert single email string to list for consistency
+    if isinstance(user_emails, str):
+        user_emails = [user_emails]
+
+    braze_client = BrazeApiClient()
+    braze_client.create_braze_alias(user_emails, ENTERPRISE_BRAZE_ALIAS_LABEL)
+    return braze_client

@@ -10,6 +10,7 @@ from braze.exceptions import BrazeClientError
 from django.conf import settings
 from django.db.models import prefetch_related_objects
 
+from license_manager.apps.api import utils as api_utils
 from license_manager.apps.api_client.braze import BrazeApiClient
 from license_manager.apps.subscriptions.constants import (
     ENTERPRISE_BRAZE_ALIAS_LABEL,
@@ -110,9 +111,8 @@ def _track_batch_events_via_braze_alias(event_name, properties_by_email):
         logger.info(msg, batch_id, properties['license_uuid'], properties['enterprise_customer_slug'])
 
     # Now send the data to braze
-    braze_client_instance = BrazeApiClient()
     try:
-        braze_client_instance.create_braze_alias(braze_alias_emails, ENTERPRISE_BRAZE_ALIAS_LABEL)
+        braze_client_instance = api_utils.create_braze_alias_for_emails(braze_alias_emails)
         logger.info('Sent batch of braze aliases with batch id %s', batch_id)
     except BrazeClientError as exc:
         logger.exception()

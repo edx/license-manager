@@ -106,11 +106,7 @@ def create_braze_aliases_task(user_emails):
 
     """
     try:
-        braze_client_instance = BrazeApiClient()
-        braze_client_instance.create_braze_alias(
-            user_emails,
-            ENTERPRISE_BRAZE_ALIAS_LABEL,
-        )
+        utils.create_braze_alias_for_emails(user_emails)
     except BrazeClientError as exc:
         logger.exception(exc)
         raise exc
@@ -208,11 +204,7 @@ def _batch_notify_or_remind_assigned_emails(
 
     # Batch at the Braze API layer
     try:
-        braze_client_instance = BrazeApiClient()
-        braze_client_instance.create_braze_alias(
-            emails_for_aliasing,
-            ENTERPRISE_BRAZE_ALIAS_LABEL,
-        )
+        braze_client_instance = utils.create_braze_alias_for_emails(emails_for_aliasing)
         braze_client_instance.send_campaign_message(campaign_uuid, recipients=recipients)
         logger.info(
             f'{LICENSE_DEBUG_PREFIX} Sent license {action_type} emails '
@@ -307,11 +299,7 @@ def send_post_activation_email_task(enterprise_customer_uuid, user_email):
     recipient['attributes'].update({'enterprise_default_language': enterprise_default_language})
 
     try:
-        braze_client_instance = BrazeApiClient()
-        braze_client_instance.create_braze_alias(
-            [user_email],
-            ENTERPRISE_BRAZE_ALIAS_LABEL,
-        )
+        braze_client_instance = utils.create_braze_alias_for_emails(user_email)
         braze_client_instance.send_campaign_message(
             braze_campaign_id,
             recipients=[recipient],
@@ -368,11 +356,7 @@ def send_auto_applied_license_email_task(enterprise_customer_uuid, user_email):
 
     try:
         # Hit the Braze api to send the email
-        braze_client_instance = BrazeApiClient()
-        braze_client_instance.create_braze_alias(
-            [user_email],
-            ENTERPRISE_BRAZE_ALIAS_LABEL,
-        )
+        braze_client_instance = utils.create_braze_alias_for_emails(user_email)
         braze_client_instance.send_campaign_message(
             braze_campaign_id,
             recipients=[recipient],
@@ -495,11 +479,7 @@ def send_revocation_cap_notification_email_task(subscription_uuid):
     recipient = _aliased_recipient_object_from_email(settings.CUSTOMER_SUCCESS_EMAIL_ADDRESS)
 
     try:
-        braze_client_instance = BrazeApiClient()
-        braze_client_instance.create_braze_alias(
-            [settings.CUSTOMER_SUCCESS_EMAIL_ADDRESS],
-            ENTERPRISE_BRAZE_ALIAS_LABEL,
-        )
+        braze_client_instance = utils.create_braze_alias_for_emails(settings.CUSTOMER_SUCCESS_EMAIL_ADDRESS)
         braze_client_instance.send_campaign_message(
             braze_campaign_id,
             recipients=[recipient],

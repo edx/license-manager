@@ -13,15 +13,8 @@ Assume the dev containers are already running.
 
 You must enter a docker container shell to run tests and linters.
 ```bash
-# Run tests in Docker
-make app-shell
-# then inside container:
-pytest
-
-# Run specific test
-make app-shell
-# then inside container:
-pytest path/to/test_file.py::TestClass::test_method
+# Run tests via docker container
+docker compose run app bash -c "pytest -c pytest.local.ini path/to/test_file.py::TestClass::test_method"
 ```
 
 ## Run Instructions

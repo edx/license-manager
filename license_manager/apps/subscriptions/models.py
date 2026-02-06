@@ -1253,6 +1253,12 @@ class License(TimeStampedModel):
         null=True,
     )
 
+    expiration_reminder_sent_date = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text='Date when the license expiration reminder email was sent to the learner.',
+    )
+
     revoked_date = models.DateTimeField(
         blank=True,
         null=True,

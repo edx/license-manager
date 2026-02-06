@@ -105,7 +105,8 @@ docs/_build/
 *CLAUDE.md
 .claude/
 
-# Ignore ralph for now
-.ralph/
-.ralphrc
-docs/ralph.rst
+# Ralph
+.ralph/.*
+.ralph/status.json
+.ralph/progress.json
+.ralph/specs/

@@ -187,10 +187,7 @@ def check_missing_licenses(customer_agreement, user_emails, course_run_keys, sub
                 subscription_plan = user_license.subscription_plan
                 plan_key = f'{subscription_plan.uuid}_{course_key}'
 
-                # TODO AED 2024-02-09: I think this chunk of code is defective.
-                # It's only mapping plan ids to booleans, but what we really want
-                # to know is, for each plan *and course*, if the plan's associated catalog
-                # contains the course.
+                # Check if we've already determined whether this plan contains this course
                 if plan_key in subscription_plan_course_map:
                     plan_contains_content = subscription_plan_course_map.get(plan_key)
                 else:

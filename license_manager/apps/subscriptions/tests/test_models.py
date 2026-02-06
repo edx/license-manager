@@ -756,3 +756,260 @@ class LicenseTransferJobTests(TestCase):
         for _license in old_activated_licenses:
             _license.refresh_from_db()
             self.assertEqual(_license.subscription_plan, self.old_plan)
+
+    def test_validation_different_customer_agreements(self):
+        """
+        Tests that clean() raises ValidationError when old and new plans
+        have different customer agreements.
+        """
+        other_customer_agreement = CustomerAgreementFactory.create()
+        other_plan = SubscriptionPlanFactory.create(
+            customer_agreement=other_customer_agreement,
+            is_active=True,
+        )
+
+        job = LicenseTransferJob(
+            customer_agreement=self.customer_agreement,
+            old_subscription_plan=self.old_plan,
+            new_subscription_plan=other_plan,
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            job.clean()
+
+        self.assertIn('same customer_agreement', str(context.exception))
+
+    def test_validation_missing_transfer_criteria(self):
+        """
+        Tests that clean() raises ValidationError when neither transfer_all
+        nor license_uuids_raw is specified.
+        """
+        job = LicenseTransferJob(
+            customer_agreement=self.customer_agreement,
+            old_subscription_plan=self.old_plan,
+            new_subscription_plan=self.new_plan,
+            transfer_all=False,
+            license_uuids_raw=None,
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            job.clean()
+
+        self.assertIn('transfer_all or license_uuids_raw', str(context.exception))
+
+    def test_delimiter_comma(self):
+        """
+        Tests that comma delimiter correctly splits license UUIDs.
+        """
+        licenses = LicenseFactory.create_batch(
+            3, subscription_plan=self.old_plan, assigned_date=localized_utcnow(), status=ACTIVATED,
+        )
+
+        job = self._create_transfer_job(
+            delimiter='comma',
+            license_uuids_raw=','.join([str(_license.uuid) for _license in licenses]),
+        )
+
+        self.assertEqual(job.delimiter_char, ',')
+        self.assertEqual(len(job.get_license_uuids()), 3)
+
+    def test_delimiter_pipe(self):
+        """
+        Tests that pipe delimiter correctly splits license UUIDs.
+        """
+        licenses = LicenseFactory.create_batch(
+            3, subscription_plan=self.old_plan, assigned_date=localized_utcnow(), status=ACTIVATED,
+        )
+
+        job = self._create_transfer_job(
+            delimiter='pipe',
+            license_uuids_raw='|'.join([str(_license.uuid) for _license in licenses]),
+        )
+
+        self.assertEqual(job.delimiter_char, '|')
+        self.assertEqual(len(job.get_license_uuids()), 3)
+
+    def test_license_uuids_with_whitespace(self):
+        """
+        Tests that extra whitespace in license_uuids_raw is properly stripped.
+        """
+        licenses = LicenseFactory.create_batch(
+            3, subscription_plan=self.old_plan, assigned_date=localized_utcnow(), status=ACTIVATED,
+        )
+
+        # Add extra spaces around UUIDs
+        job = self._create_transfer_job(
+            license_uuids_raw='\n '.join([f' {str(_license.uuid)} ' for _license in licenses]),
+        )
+
+        license_uuids = job.get_license_uuids()
+        self.assertEqual(len(license_uuids), 3)
+        # Verify all UUIDs are properly trimmed
+        for uuid_str in license_uuids:
+            self.assertFalse(uuid_str.startswith(' '))
+            self.assertFalse(uuid_str.endswith(' '))
+
+    def test_transfer_excludes_revoked_licenses(self):
+        """
+        Tests that revoked licenses are not transferred when transfer_all is False.
+        """
+        activated_licenses = LicenseFactory.create_batch(
+            2, subscription_plan=self.old_plan, assigned_date=localized_utcnow(), status=ACTIVATED,
+        )
+        revoked_licenses = LicenseFactory.create_batch(
+            2, subscription_plan=self.old_plan, assigned_date=localized_utcnow(), status=REVOKED,
+        )
+
+        # Include both activated and revoked license UUIDs
+        all_uuids = [str(_license.uuid) for _license in activated_licenses + revoked_licenses]
+        job = self._create_transfer_job(
+            license_uuids_raw='\n'.join(all_uuids),
+        )
+
+        # Process should only transfer activated licenses
+        job.process()
+
+        # Activated licenses should be transferred
+        for _license in activated_licenses:
+            _license.refresh_from_db()
+            self.assertEqual(_license.subscription_plan, self.new_plan)
+
+        # Revoked licenses should remain in old plan
+        for _license in revoked_licenses:
+            _license.refresh_from_db()
+            self.assertEqual(_license.subscription_plan, self.old_plan)
+
+        # Verify only activated licenses are in processed_results
+        self.assertEqual(
+            len(job.processed_results[0]['modified_licenses']),
+            len(activated_licenses)
+        )
+
+    def test_transfer_with_nonexistent_license_uuids(self):
+        """
+        Tests that transfer job handles non-existent license UUIDs gracefully.
+        """
+        real_licenses = LicenseFactory.create_batch(
+            2, subscription_plan=self.old_plan, assigned_date=localized_utcnow(), status=ACTIVATED,
+        )
+        fake_uuid = str(uuid.uuid4())
+
+        job = self._create_transfer_job(
+            license_uuids_raw='\n'.join(
+                [str(_license.uuid) for _license in real_licenses] + [fake_uuid]
+            ),
+        )
+
+        job.process()
+
+        # Only real licenses should be transferred
+        self.assertEqual(
+            len(job.processed_results[0]['modified_licenses']),
+            len(real_licenses)
+        )
+
+        for _license in real_licenses:
+            _license.refresh_from_db()
+            self.assertEqual(_license.subscription_plan, self.new_plan)
+
+    def test_transfer_licenses_from_different_plan(self):
+        """
+        Tests that licenses from a different plan are not transferred.
+        """
+        correct_plan_licenses = LicenseFactory.create_batch(
+            2, subscription_plan=self.old_plan, assigned_date=localized_utcnow(), status=ACTIVATED,
+        )
+        different_plan_licenses = LicenseFactory.create_batch(
+            2, subscription_plan=self.new_plan, assigned_date=localized_utcnow(), status=ACTIVATED,
+        )
+
+        # Try to transfer licenses from both plans
+        all_uuids = [
+            str(_license.uuid)
+            for _license in correct_plan_licenses + different_plan_licenses
+        ]
+        job = self._create_transfer_job(
+            license_uuids_raw='\n'.join(all_uuids),
+        )
+
+        job.process()
+
+        # Only licenses from old_plan should be transferred
+        self.assertEqual(
+            len(job.processed_results[0]['modified_licenses']),
+            len(correct_plan_licenses)
+        )
+
+        for _license in correct_plan_licenses:
+            _license.refresh_from_db()
+            self.assertEqual(_license.subscription_plan, self.new_plan)
+
+        # Licenses already in new_plan should remain unchanged
+        for _license in different_plan_licenses:
+            _license.refresh_from_db()
+            self.assertEqual(_license.subscription_plan, self.new_plan)
+
+    def test_transfer_all_includes_all_statuses(self):
+        """
+        Tests that transfer_all=True includes licenses of all statuses.
+        """
+        activated_licenses = LicenseFactory.create_batch(
+            2, subscription_plan=self.old_plan, assigned_date=localized_utcnow(), status=ACTIVATED,
+        )
+        assigned_licenses = LicenseFactory.create_batch(
+            2, subscription_plan=self.old_plan, assigned_date=localized_utcnow(), status=ASSIGNED,
+        )
+        unassigned_licenses = LicenseFactory.create_batch(
+            2, subscription_plan=self.old_plan, status=UNASSIGNED,
+        )
+        revoked_licenses = LicenseFactory.create_batch(
+            2, subscription_plan=self.old_plan, status=REVOKED,
+        )
+
+        job = self._create_transfer_job(transfer_all=True)
+        job.process()
+
+        # All licenses should be transferred
+        all_licenses = (
+            activated_licenses + assigned_licenses +
+            unassigned_licenses + revoked_licenses
+        )
+        self.assertEqual(
+            len(job.processed_results[0]['modified_licenses']),
+            len(all_licenses)
+        )
+
+        for _license in all_licenses:
+            _license.refresh_from_db()
+            self.assertEqual(_license.subscription_plan, self.new_plan)
+
+    def test_empty_license_uuids_raw(self):
+        """
+        Tests that get_license_uuids handles empty license_uuids_raw string.
+        """
+        job = self._create_transfer_job(
+            license_uuids_raw='',
+        )
+
+        license_uuids = job.get_license_uuids()
+        # Empty string split by delimiter returns list with one empty string
+        self.assertEqual(len(license_uuids), 1)
+        self.assertEqual(license_uuids[0], '')
+
+    def test_delimiter_char_property_default(self):
+        """
+        Tests that delimiter_char property returns newline for default delimiter.
+        """
+        job = self._create_transfer_job(
+            license_uuids_raw='uuid1\nuuid2',
+        )
+
+        self.assertEqual(job.delimiter_char, '\n')
+
+    def test_get_customer_agreement_success(self):
+        """
+        Tests that get_customer_agreement returns the customer agreement.
+        """
+        job = self._create_transfer_job(transfer_all=True)
+
+        self.assertEqual(job.get_customer_agreement(), self.customer_agreement)

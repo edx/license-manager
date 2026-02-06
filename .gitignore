@@ -103,3 +103,8 @@ docs/_build/
 
 # LLMs/AI
 *CLAUDE.md
+
+# Ralph
+.ralph/.*
+.ralph/status.json
+.ralph/progress.json

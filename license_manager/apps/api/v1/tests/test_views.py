@@ -16,7 +16,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import DatabaseError
 from django.http import QueryDict
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django_dynamic_fixture import get as get_model_fixture
 from edx_rest_framework_extensions.auth.jwt.cookies import jwt_cookie_name
@@ -4484,6 +4484,7 @@ class UserRetirementViewTests(TestCase):
         response = self._post_request(1000, 'fake-username')
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
+    @override_settings(DEBUG_TOOLBAR_CONFIG={'SHOW_TOOLBAR_CALLBACK': lambda request: False})
     @mock.patch('license_manager.apps.api.v1.views.get_user_model')
     def test_retirement_500_error(self, mock_get_user_model):
         """

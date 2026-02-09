@@ -153,3 +153,7 @@ NOTIFICATION_CHOICE_AND_CAMPAIGN_BY_THRESHOLD = {
 ENTERPRISE_BRAZE_ALIAS_LABEL = 'Enterprise'  # Do Not change this, this is consistent with other uses across edX repos.
 
 EXPIRED_LICENSE_UNLINKED = 'edx.server.license-manager.expired.license.unlinked'
+
+# Patterns used to serialize date/time to be machine-readable by Braze.
+BRAZE_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+BRAZE_DATE_FORMAT = "%b %d, %Y"

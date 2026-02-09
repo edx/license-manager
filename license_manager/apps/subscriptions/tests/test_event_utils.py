@@ -81,7 +81,7 @@ def test_track_license_changes_with_properties(mock_track_event, _):
 
 
 @mark.django_db
-@mock.patch('license_manager.apps.subscriptions.event_utils.BrazeApiClient', return_value=mock.MagicMock())
+@mock.patch('license_manager.apps.api.utils.BrazeApiClient', return_value=mock.MagicMock())
 def test_track_event_via_braze_alias(mock_braze_client):
     test_email = 'edx@myexample.com'
     assigned_license = LicenseFactory.create(

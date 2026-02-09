@@ -297,9 +297,9 @@ class CustomerAgreementViewSet(
                 event_utils.track_event(self.lms_user_id,
                                         constants.SegmentEvents.LICENSE_NOT_ASSIGNED,
                                         event_properties)
-            except Exception:  # pylint: disable=broad-except
+            except (AttributeError, TypeError) as exc:
                 logger.warning(
-                    f"Emitting segment event for 'no licenses for auto-apply' failed for plan: {plan}"
+                    f"Emitting segment event for 'no licenses for auto-apply' failed for plan: {plan}. Error: {exc}"
                 )
 
             return Response(error_message, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
@@ -561,9 +561,12 @@ class SubscriptionPlanProvisioningAdminViewset(
         except AttributeError as error:
             logger.exception(error)
             return Response({'error': str(error)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as error:  # pylint: disable=broad-except
+        except DatabaseError as error:
             logger.exception(error)
-            return Response({'error': 'Unknown error.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': 'Database error during license provisioning.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     @extend_schema(
         tags=[SUBSCRIPTION_PLAN_PROVISIONING_ADMIN_CRUD_API_TAG],
@@ -594,9 +597,12 @@ class SubscriptionPlanProvisioningAdminViewset(
         except AttributeError as error:
             logger.exception(error)
             return Response({'error': str(error)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as error:  # pylint: disable=broad-except
+        except DatabaseError as error:
             logger.exception(error)
-            return Response({'error': 'Unknown error.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': 'Database error during license provisioning.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     @extend_schema(
         tags=[SUBSCRIPTION_PLAN_PROVISIONING_ADMIN_CRUD_API_TAG],
@@ -1940,8 +1946,11 @@ class UserRetirementView(APIView):
             user.delete()
         except ObjectDoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        except Exception as exc:  # pylint: disable=broad-except
-            logger.exception('500 error retiring user with lms_user_id %r. Error: %s', lms_user_id, exc)
+        except DatabaseError as exc:
+            logger.exception('Database error retiring user with lms_user_id %r. Error: %s', lms_user_id, exc)
+            return Response('Error retiring user', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error('500 error retiring user with lms_user_id %s. Error: %s', lms_user_id, exc)
             return Response('Error retiring user', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(status=status.HTTP_204_NO_CONTENT)

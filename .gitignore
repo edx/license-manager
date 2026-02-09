@@ -103,3 +103,9 @@ docs/_build/
 
 # LLMs/AI
 *CLAUDE.md
+.claude/
+
+# Ignore ralph for now
+.ralph/
+.ralphrc
+docs/ralph.rst

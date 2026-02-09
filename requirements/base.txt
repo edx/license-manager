@@ -24,9 +24,9 @@ billiard==4.2.4
     # via celery
 bleach[css]==6.3.0
     # via -r requirements/base.in
-boto3==1.42.42
+boto3==1.42.44
     # via django-ses
-botocore==1.42.42
+botocore==1.42.44
     # via
     #   boto3
     #   s3transfer
@@ -117,7 +117,7 @@ django-model-utils==5.0.0
     #   -r requirements/base.in
     #   edx-celeryutils
     #   edx-rbac
-django-ses==4.7.0
+django-ses==4.7.1
     # via -r requirements/base.in
 django-simple-history==3.11.0
     # via -r requirements/base.in
@@ -309,7 +309,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.5.3
+wcwidth==0.6.0
     # via prompt-toolkit
 webencodings==0.5.1
     # via

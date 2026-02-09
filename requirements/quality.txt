@@ -15,7 +15,7 @@ asgiref==3.11.1
     #   -r requirements/base.txt
     #   django
     #   django-cors-headers
-astroid==4.0.3
+astroid==4.0.4
     # via
     #   pylint
     #   pylint-celery
@@ -34,11 +34,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.3.0
     # via -r requirements/base.txt
-boto3==1.42.42
+boto3==1.42.44
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.42.42
+botocore==1.42.44
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -155,7 +155,7 @@ django-model-utils==5.0.0
     #   -r requirements/base.txt
     #   edx-celeryutils
     #   edx-rbac
-django-ses==4.7.0
+django-ses==4.7.1
     # via -r requirements/base.txt
 django-simple-history==3.11.0
     # via -r requirements/base.txt
@@ -456,7 +456,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.5.3
+wcwidth==0.6.0
     # via
     #   -r requirements/base.txt
     #   prompt-toolkit

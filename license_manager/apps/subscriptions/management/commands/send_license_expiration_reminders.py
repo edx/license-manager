@@ -155,7 +155,8 @@ class Command(BaseCommand):
         enterprise_default_language = enterprise_customer.get('default_language') or ''
 
         expiration_date = license_obj.subscription_plan.expiration_date
-        days_until_expiration = (expiration_date - localized_utcnow()).days
+        delta = expiration_date.date() - localized_utcnow().date()
+        days_until_expiration = delta.days
 
         # Prepare Braze campaign trigger properties
         trigger_properties = {

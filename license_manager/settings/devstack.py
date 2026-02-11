@@ -103,6 +103,13 @@ VALIDATE_FORM_EXTERNAL_FIELDS = False
 # https://github.com/django-extensions/django-extensions#using-it
 INSTALLED_APPS += ('django_extensions',)
 
+# shell_plus
+SHELL_PLUS_IMPORTS = [
+    'from datetime import datetime, timedelta',
+    'from pprint import pprint',
+    'from license_manager.apps.subscriptions.utils import *',
+]
+
 # Make some loggers less noisy (useful during test failure)
 import logging
 

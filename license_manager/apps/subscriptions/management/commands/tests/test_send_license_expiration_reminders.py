@@ -1,10 +1,11 @@
 """
 Tests for the send_license_expiration_reminders management command.
 """
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from unittest import mock
 from uuid import uuid4
 
+import ddt
 import pytest
 from braze.exceptions import BrazeClientError
 from django.core.management import call_command
@@ -28,6 +29,7 @@ from license_manager.apps.subscriptions.tests.factories import (
 from license_manager.apps.subscriptions.utils import localized_utcnow
 
 
+@ddt.ddt
 @pytest.mark.django_db
 class SendLicenseExpirationRemindersTests(TestCase):
     """
@@ -635,6 +637,85 @@ class SendLicenseExpirationRemindersTests(TestCase):
         # Verify Braze API was called only for first enterprise's 2 licenses
         assert mock_create_braze_alias.call_count == 2
         assert mock_braze_instance.send_campaign_message.call_count == 2
+
+    @override_settings(BRAZE_LICENSE_EXPIRATION_REMINDER_CAMPAIGN='test-campaign-id')
+    @mock.patch('license_manager.apps.subscriptions.management.commands.send_license_expiration_reminders.localized_utcnow')
+    @mock.patch('license_manager.apps.subscriptions.management.commands.send_license_expiration_reminders.EnterpriseApiClient')
+    @mock.patch('license_manager.apps.api.utils.create_braze_alias_for_emails')
+    @ddt.data(
+        # One minute before Feb 11: expiration window targets Mar 12, so Mar 13 is out of range.
+        {'mocked_now': datetime(2026, 2, 10, 23, 59, 0, tzinfo=timezone.utc), 'message_sent': False},
+        # Feb 11 at midnight: window is exactly Mar 13; expiration at midnight is included.
+        {'mocked_now': datetime(2026, 2, 11, 0, 0, 0, tzinfo=timezone.utc), 'message_sent': True},
+        # Feb 11 mid-morning: same calendar date, still targets Mar 13.
+        {'mocked_now': datetime(2026, 2, 11, 0, 30, 0, tzinfo=timezone.utc), 'message_sent': True},
+        # Feb 11 late evening: regression case — old datetime subtraction gave 29 days, not 30.
+        {'mocked_now': datetime(2026, 2, 11, 23, 30, 0, tzinfo=timezone.utc), 'message_sent': True},
+        # Feb 12 at midnight: window targets Mar 14, so Mar 13 is already past the threshold.
+        {'mocked_now': datetime(2026, 2, 12, 0, 0, 0, tzinfo=timezone.utc), 'message_sent': False},
+    )
+    @ddt.unpack
+    def test_days_until_expiration_uses_calendar_dates(
+        self, mock_create_braze_alias, mock_enterprise_client, mock_utcnow, mocked_now, message_sent
+    ):
+        """
+        Regression test: days_until_expiration must be calculated via calendar date
+        subtraction, not datetime subtraction.
+
+        The original code used `(expiration_date - localized_utcnow()).days`, which
+        truncates the timedelta and can return 29 when the expiration datetime is
+        at midnight and the current time is late in the day (e.g. 23:30 UTC), even
+        though 30 full calendar days remain.
+
+        The fix compares `.date()` portions so the result is always the correct
+        calendar-day count regardless of the time-of-day component.
+
+        The data cases also verify the expiration window query boundaries: only
+        licenses whose subscription expires on the exact target calendar date are
+        selected, regardless of what time of day the command runs.
+        """
+        mock_utcnow.return_value = mocked_now
+
+        mock_enterprise_instance = mock_enterprise_client.return_value
+        mock_enterprise_instance.get_enterprise_customer_data.return_value = {
+            'uuid': str(self.enterprise_customer_uuid),
+            'slug': 'test-enterprise',
+            'name': 'Test Enterprise',
+            'contact_email': 'contact@example.com',
+            'default_language': 'en',
+        }
+
+        mock_braze_instance = mock.Mock()
+        mock_braze_instance.send_campaign_message.return_value = None
+        mock_create_braze_alias.return_value = mock_braze_instance
+
+        # Subscription expires at midnight on Mar 13 — exactly 30 calendar days after Feb 11.
+        expiration_date = datetime(2026, 3, 13, 0, 0, 0, tzinfo=timezone.utc)
+        subscription_plan = SubscriptionPlanFactory(
+            customer_agreement=self.customer_agreement,
+            start_date=datetime(2025, 2, 11, 0, 0, 0, tzinfo=timezone.utc),
+            expiration_date=expiration_date,
+            is_active=True,
+        )
+        LicenseFactory(
+            subscription_plan=subscription_plan,
+            status=ACTIVATED,
+            user_email='user@example.com',
+            lms_user_id=12345,
+        )
+
+        call_command(
+            self.command_name,
+            enterprise_customer_uuid=str(self.enterprise_customer_uuid),
+            days_before_expiration=30,
+        )
+
+        if message_sent:
+            assert mock_braze_instance.send_campaign_message.call_count == 1
+            trigger_properties = mock_braze_instance.send_campaign_message.call_args[1]['trigger_properties']
+            assert trigger_properties['days_until_expiration'] == 30
+        else:
+            assert mock_braze_instance.send_campaign_message.call_count == 0
 
     def test_empty_enterprise_customer_uuids(self):
         """

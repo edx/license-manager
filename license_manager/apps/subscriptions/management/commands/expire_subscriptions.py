@@ -138,7 +138,7 @@ class Command(BaseCommand):
 
         expired_subscription_plans = SubscriptionPlan.objects.filter(
             **filters
-        ).select_related('customer_agreement').prefetch_related('licenses')
+        ).select_related('customer_agreement').prefetch_related('licenses').order_by('start_date')
 
         if not expired_subscription_plans:
             if options['subscription_uuids']:

@@ -79,7 +79,7 @@ router.register(
 router.register(
     prefix='provisioning-admins/subscriptions',
     viewset=views.SubscriptionPlanProvisioningAdminViewset,
-    basename='provisioning-admins',
+    basename='provisioning-admins-subscription-plans',
 )
 router.register(
     prefix='provisioning-admins/subscription-plan-renewals',

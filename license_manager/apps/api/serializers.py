@@ -850,6 +850,22 @@ class SubscriptionPlanQueryParamsSerializer(serializers.Serializer):  # pylint: 
         ]
 
 
+class SubscriptionPlanProvisioningAdminQueryParamsSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    Serializer for the subscription plan (provisioning admin) query params
+    """
+
+    enterprise_customer_uuid = serializers.UUIDField(
+        required=False,
+        help_text='The UUID of the associated enterprise customer',
+    )
+
+    include_inactive = serializers.BooleanField(
+        required=False,
+        help_text="Allow listing/retrieving/updating inactive subscription plans if 'true'",
+    )
+
+
 class SubscriptionPlanRenewalProvisioningAdminResponseSerializer(serializers.ModelSerializer):
     """
     A read-only Serializer for responding to requests for ``SubscriptionPlanRenewal`` records.

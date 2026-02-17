@@ -494,7 +494,7 @@ class SubscriptionViewSet(LearnerSubscriptionViewSet):
     list=extend_schema(
         summary='List all SubscriptionPlans',
         description='List all SubscriptionPlans or for a given enterprise_customer_uuid',
-        parameters=[serializers.SubscriptionPlanQueryParamsSerializer],
+        parameters=[serializers.SubscriptionPlanProvisioningAdminQueryParamsSerializer],
     ),
 )
 class SubscriptionPlanProvisioningAdminViewset(
@@ -520,9 +520,17 @@ class SubscriptionPlanProvisioningAdminViewset(
 
     def get_queryset(self):
         """
-        Appends enterprise_customer_uuid in queryset if found in query params
+        Scopes the set of accessible SubscriptionPlans to just those that are:
+        * associated with the customer specified by the `enterprise_customer_uuid` query param.
+        * active, unless the `include_inactive` query param is set to "true".
         """
-        model_filters = {'is_active': True}
+        model_filters = {}
+
+        # Some privileged clients need read/write access to inactive SubscriptionPlan records.
+        include_inactive = self.request.query_params.get('include_inactive', 'false').lower() == 'true'
+        if not include_inactive:
+            model_filters['is_active'] = True
+
         if self.requested_enterprise_uuid:
             model_filters['customer_agreement__enterprise_customer_uuid'] = self.requested_enterprise_uuid
         return SubscriptionPlan.objects.filter(**model_filters).order_by('-start_date')
@@ -571,6 +579,7 @@ class SubscriptionPlanProvisioningAdminViewset(
     @extend_schema(
         tags=[SUBSCRIPTION_PLAN_PROVISIONING_ADMIN_CRUD_API_TAG],
         summary='Partially update (with a PATCH) a subscription plan by UUID.',
+        parameters=[serializers.SubscriptionPlanProvisioningAdminQueryParamsSerializer],
     )
     def partial_update(self, request, *args, **kwargs):
         """
@@ -607,6 +616,7 @@ class SubscriptionPlanProvisioningAdminViewset(
     @extend_schema(
         tags=[SUBSCRIPTION_PLAN_PROVISIONING_ADMIN_CRUD_API_TAG],
         summary='Retrieve subscription plan renewal by UUID.',
+        parameters=[serializers.SubscriptionPlanProvisioningAdminQueryParamsSerializer],
     )
     def retrieve(self, request, *args, **kwargs):
         """

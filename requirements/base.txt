@@ -24,9 +24,9 @@ billiard==4.2.4
     # via celery
 bleach[css]==6.3.0
     # via -r requirements/base.in
-boto3==1.42.44
+boto3==1.42.49
     # via django-ses
-botocore==1.42.44
+botocore==1.42.49
     # via
     #   boto3
     #   s3transfer
@@ -59,7 +59,7 @@ click-repl==0.3.0
     # via celery
 code-annotations==2.3.0
     # via edx-toggles
-cryptography==46.0.4
+cryptography==46.0.5
     # via pyjwt
 defusedxml==0.7.1
     # via
@@ -198,7 +198,7 @@ markupsafe==3.0.3
     # via jinja2
 monotonic==1.6
     # via analytics-python
-mysqlclient==2.2.7
+mysqlclient==2.2.8
     # via -r requirements/base.in
 oauthlib==3.3.1
     # via
@@ -240,7 +240,7 @@ pyyaml==6.0.3
     # via
     #   code-annotations
     #   drf-spectacular
-redis==7.1.0
+redis==7.1.1
     # via -r requirements/base.in
 referencing==0.37.0
     # via
@@ -275,7 +275,7 @@ six==1.17.0
     #   python-dateutil
 social-auth-app-django==5.7.0
     # via edx-auth-backends
-social-auth-core==4.8.3
+social-auth-core==4.8.5
     # via
     #   edx-auth-backends
     #   social-auth-app-django

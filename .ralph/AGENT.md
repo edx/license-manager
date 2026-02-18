@@ -9,51 +9,17 @@
 
 Assume the dev containers are already running.
 
-## Test Instructions
-
-You must enter a docker container shell to run tests and linters.
-```bash
-# Run tests via docker container
-docker compose run app bash -c "pytest -c pytest.local.ini path/to/test_file.py::TestClass::test_method"
-```
-
-## Run Instructions
-
-```bash
-# Start all services (includes Redis from devstack)
-make dev.up
-
-# Open bash shell in app container
-make app-shell
-
-# Stop containers without removing data
-make dev.stop
-
-# Stop and remove containers
-make dev.down
-
-# Apply database migrations
-make dev.migrate
-
-# Access the server
-# Server runs on localhost:18170
-# Admin interface at /admin with credentials edx/edx
-```
-
-## Quality & Maintenance
+## Test and Quality Instructions
 
 You must use a docker container shell to run tests and linters.
-
 ```bash
 # Run tests via docker container
-docker compose run app bash -c "make isort style"
-docker compose run app bash -c "make lint"
-docker compose run app bash -c "make pii_check"
+docker run --rm edxops/license-manager-dev:latest bash -c "DJANGO_SETTINGS_MODULE=license_manager.settings.test pytest -c pytest.local.in license_manager/apps/subscriptions/tests/test_models.py::TestClass::test_method"
+docker run --rm edxops/license-manager-dev:latest bash -c "DJANGO_SETTINGS_MODULE=license_manager.settings.test make quality"
 ```
 
+
 ## Notes
-- Server runs on `localhost:18170`
-- Admin credentials: `edx/edx`
 - Line length: 120 characters
 - Uses Django with pytest for testing
 - Celery for background tasks

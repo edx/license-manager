@@ -35,11 +35,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.3.0
     # via -r requirements/validation.txt
-boto3==1.42.49
+boto3==1.42.54
     # via
     #   -r requirements/validation.txt
     #   django-ses
-botocore==1.42.49
+botocore==1.42.54
     # via
     #   -r requirements/validation.txt
     #   boto3
@@ -186,7 +186,7 @@ django-model-utils==5.0.0
     #   -r requirements/validation.txt
     #   edx-celeryutils
     #   edx-rbac
-django-ses==4.7.1
+django-ses==4.7.2
     # via -r requirements/validation.txt
 django-simple-history==3.11.0
     # via -r requirements/validation.txt
@@ -281,7 +281,7 @@ iniconfig==2.3.0
     # via
     #   -r requirements/validation.txt
     #   pytest
-isort==7.0.0
+isort==8.0.0
     # via
     #   -r requirements/validation.txt
     #   pylint
@@ -362,7 +362,7 @@ pathlib2==2.3.7.post1
     # via -r requirements/validation.txt
 pip-tools==7.5.3
     # via -r requirements/pip-tools.txt
-platformdirs==4.9.1
+platformdirs==4.9.2
     # via
     #   -r requirements/validation.txt
     #   pylint
@@ -409,7 +409,7 @@ pyjwt[crypto]==2.11.0
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   social-auth-core
-pylint==4.0.4
+pylint==4.0.5
     # via
     #   -r requirements/validation.txt
     #   edx-lint
@@ -476,7 +476,7 @@ pyyaml==6.0.3
     #   code-annotations
     #   drf-spectacular
     #   edx-i18n-tools
-redis==7.1.1
+redis==7.2.0
     # via -r requirements/validation.txt
 referencing==0.37.0
     # via
@@ -539,7 +539,7 @@ sqlparse==0.5.5
     #   -r requirements/validation.txt
     #   django
     #   django-debug-toolbar
-stevedore==5.6.0
+stevedore==5.7.0
     # via
     #   -r requirements/validation.txt
     #   code-annotations
@@ -557,7 +557,7 @@ tomlkit==0.14.0
     # via
     #   -r requirements/validation.txt
     #   pylint
-typeguard==4.5.0
+typeguard==4.5.1
     # via inflect
 typing-extensions==4.15.0
     # via

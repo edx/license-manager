@@ -23,7 +23,7 @@ jobs:
       run: make requirements
     - name: Upgrade packages
       run: |
-        pip install -U pip wheel codecov -c requirements/constraints.txt
+        pip install -U pip wheel -c requirements/constraints.txt
         if [[ "${{ matrix.django-version }}" != "pinned" ]]; then
           pip install "django~=${{ matrix.django-version }}.0"
           pip check # fail if this test-reqs/Django combination is broken
@@ -32,8 +32,12 @@ jobs:
       run: make validate_translations
     - name: Run tests
       run: make test
-    - name: Codecov
-      run: codecov
+    - name: Upload coverage
+      if: matrix.django-version == 'pinned'
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
   quality:
     runs-on: ubuntu-latest
     strategy:
@@ -48,7 +52,7 @@ jobs:
     - name: Install requirements
       run: make requirements
     - name: Upgrade packages
-      run: pip install -U pip wheel codecov
+      run: pip install -U pip wheel
     - name: Run pylint
       run: make lint
     - name: Run pycodestyle

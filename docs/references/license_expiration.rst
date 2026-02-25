@@ -223,16 +223,73 @@ Example log output:
     INFO Completed send_license_expiration_reminders command for 2 enterprise customer(s).
          Total Success: 8, Total Failures: 0
 
+Subscription Plan Expiration Notification System
+-------------------------------------------------
+
+While the expiration reminder system notifies learners before their licenses expire, the subscription plan expiration notification system emails learners after their subscription plan has expired.
+
+Purpose
+^^^^^^^
+
+This separate notification serves a different purpose:
+
+* **Expiration reminders** (pre-expiration): Give learners advance notice to prepare for license expiration
+* **Plan expiration emails** (post-expiration): Notify learners that their access has ended and may prompt renewal actions
+
+Configuration
+^^^^^^^^^^^^^
+
+Requires the ``BRAZE_SUBSCRIPTION_PLAN_EXPIRATION_CAMPAIGN`` Django setting with the Braze campaign ID.
+
+How It Works
+^^^^^^^^^^^^
+
+The system queries for activated licenses where:
+
+* The subscription plan expired within the past N days (default: 7 days)
+* Today's expirations are excluded (only confirmed past expirations)
+* License status is ``ACTIVATED``
+* The ``subscription_plan_expiration_email_sent_date`` field is null
+* Licenses belong to specified enterprise customer UUID(s)
+
+Management Command
+^^^^^^^^^^^^^^^^^^
+
+The ``send_subscription_plan_expiration_emails`` command:
+
+.. code-block:: bash
+
+    # Send emails for plans expired in last 7 days
+    ./manage.py send_subscription_plan_expiration_emails \
+        --enterprise-customer-uuid 12345678-1234-1234-1234-123456789012
+
+    # Custom lookback window (14 days)
+    ./manage.py send_subscription_plan_expiration_emails \
+        --enterprise-customer-uuid 12345678-1234-1234-1234-123456789012 \
+        --days-since-expiration 14
+
+    # Multiple enterprises (comma or space-separated)
+    ./manage.py send_subscription_plan_expiration_emails \
+        --enterprise-customer-uuid "uuid1,uuid2,uuid3"
+
+    # Dry run
+    ./manage.py send_subscription_plan_expiration_emails \
+        --enterprise-customer-uuid 12345678-1234-1234-1234-123456789012 \
+        --dry-run
+
+Email properties sent to Braze include ``days_since_expiration`` (how many days ago the plan expired) and standard enterprise/license information.
+
 Integration with Renewals
 --------------------------
 
 License expiration and subscription plan renewals work together:
 
-1. **Before Renewal**: As licenses approach expiration, learners receive reminder emails
-2. **During Renewal**: A ``SubscriptionPlanRenewal`` can be created and processed
-3. **After Renewal**: New licenses are created in the future plan with a new expiration date
-4. **Reminder Reset**: New licenses in the renewed plan have null ``expiration_reminder_sent_date``
-5. **Future Reminders**: As the renewed plan approaches expiration, the cycle repeats
+1. **Before Expiration**: Learners receive expiration reminder emails (30 days before)
+2. **At Expiration**: Subscription plan expires, licenses become invalid
+3. **After Expiration**: Learners receive plan expiration notification emails (within 7 days after)
+4. **During Renewal**: A ``SubscriptionPlanRenewal`` can be created and processed
+5. **After Renewal**: New licenses are created in the future plan with new expiration dates
+6. **Future Cycle**: New licenses will receive their own reminders and notifications
 
 See :doc:`renewals` for more details on subscription plan renewals.
 

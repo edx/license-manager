@@ -44,6 +44,9 @@ class Command(BaseCommand):
         # Send emails with custom days threshold
         ./manage.py send_subscription_plan_expiration_emails --enterprise-customer-uuid 12345678-1234-1234-1234-123456789012 --days-since-expiration 14
 
+        # Send emails with custom batch size
+        ./manage.py send_subscription_plan_expiration_emails --enterprise-customer-uuid 12345678-1234-1234-1234-123456789012 --batch-size 50
+
         # Dry run to see which licenses would be processed, without sending emails
         ./manage.py send_subscription_plan_expiration_emails --enterprise-customer-uuid 12345678-1234-1234-1234-123456789012 --dry-run
     """
@@ -82,6 +85,14 @@ class Command(BaseCommand):
             default=False,
             help='If set, only log which licenses would be processed without sending emails.'
         )
+        parser.add_argument(
+            '--batch-size',
+            action='store',
+            dest='batch_size',
+            type=int,
+            default=25,
+            help='Number of licenses to process and send in each batch (default: 25).'
+        )
 
     def _parse_enterprise_customer_uuids(self, uuids_string: str) -> list[str]:
         """
@@ -106,6 +117,38 @@ class Command(BaseCommand):
                 raise
         return uuids
 
+    def _get_recently_expired_plan_licenses_base_queryset(self, enterprise_customer_uuid, days_since_expiration):
+        """
+        Build base queryset for activated licenses whose subscription plans have recently expired.
+
+        Only returns licenses that have not yet received an expiration email.
+        This allows the cron to run more frequently without sending duplicate emails.
+
+        Args:
+            enterprise_customer_uuid (str): UUID of the enterprise customer
+            days_since_expiration (int): Number of days since expiration
+
+        Returns:
+            QuerySet of License objects (unordered, no slicing)
+        """
+        now = localized_utcnow()
+        # Find subscription plans that expired within the last N days, **EXCLUDING TODAY**
+        # This ensures we only process confirmed past expirations, not today's expirations
+        expiration_window_end = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        expiration_window_start = expiration_window_end - timedelta(days=days_since_expiration)
+
+        return License.objects.filter(
+            status=ACTIVATED,
+            subscription_plan__customer_agreement__enterprise_customer_uuid=enterprise_customer_uuid,
+            subscription_plan__expiration_date__gte=expiration_window_start,
+            subscription_plan__expiration_date__lt=expiration_window_end,
+            # Only send to licenses that haven't received email yet
+            subscription_plan_expiration_email_sent_date__isnull=True,
+        ).select_related(
+            'subscription_plan',
+            'subscription_plan__customer_agreement'
+        )
+
     def _get_recently_expired_plan_licenses(self, enterprise_customer_uuid, days_since_expiration):
         """
         Get activated licenses whose subscription plans have recently expired.
@@ -120,71 +163,52 @@ class Command(BaseCommand):
         Returns:
             QuerySet of License objects
         """
-        now = localized_utcnow()
-        # Find subscription plans that expired within the last N days, **EXCLUDING TODAY**
-        # This ensures we only process confirmed past expirations, not today's expirations
-        expiration_window_end = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        expiration_window_start = expiration_window_end - timedelta(days=days_since_expiration)
+        return self._get_recently_expired_plan_licenses_base_queryset(enterprise_customer_uuid, days_since_expiration)
 
-        licenses = License.objects.filter(
-            status=ACTIVATED,
-            subscription_plan__customer_agreement__enterprise_customer_uuid=enterprise_customer_uuid,
-            subscription_plan__expiration_date__gte=expiration_window_start,
-            subscription_plan__expiration_date__lt=expiration_window_end,
-            # Only send to licenses that haven't received email yet
-            subscription_plan_expiration_email_sent_date__isnull=True,
-        ).select_related(
-            'subscription_plan',
-            'subscription_plan__customer_agreement'
-        )
-
-        return licenses
-
-    def _send_subscription_expiration_email(self, license_obj, enterprise_customer):
+    def _get_recently_expired_plan_licenses_in_batches(self, enterprise_customer_uuid, days_since_expiration, batch_size):
         """
-        Send subscription plan expiration email for a single license via Braze.
+        Get activated licenses in batches using a generator pattern.
+
+        Yields batches of licenses whose subscription plans have recently expired.
+        Uses stable pagination with pk ordering to efficiently process large result sets.
 
         Args:
-            license_obj (License): The license to send email for
+            enterprise_customer_uuid (str): UUID of the enterprise customer
+            days_since_expiration (int): Number of days since expiration
+            batch_size (int): Number of licenses per batch
+
+        Yields:
+            QuerySet of License objects (up to batch_size per batch)
+        """
+        # Get base queryset and add stable ordering for pagination
+        base_queryset = self._get_recently_expired_plan_licenses_base_queryset(
+            enterprise_customer_uuid,
+            days_since_expiration
+        ).order_by('pk')
+
+        # Paginate through results in batches
+        queryset = base_queryset[:batch_size]
+        offset = 0
+        while queryset.exists():
+            yield queryset
+            # Get the last pk in the current batch to use as offset for next batch
+            offset = list(queryset)[-1].pk
+            queryset = base_queryset.filter(pk__gt=offset)[:batch_size]
+
+    def _send_subscription_expiration_emails_batch(self, licenses, enterprise_customer):
+        """
+        Send subscription plan expiration emails for a batch of licenses via Braze.
+
+        Args:
+            licenses (list): List of License objects to send emails for
             enterprise_customer (dict): Enterprise customer data from API
 
+        Returns:
+            tuple: (successful_licenses, failed_licenses) - lists of License objects
+
         Raises:
-            BrazeClientError: If Braze API call fails
+            ValueError: If Braze campaign ID is not configured
         """
-        user_email = license_obj.user_email
-        enterprise_slug = enterprise_customer.get('slug')
-        enterprise_name = enterprise_customer.get('name')
-        enterprise_sender_alias = get_enterprise_sender_alias(enterprise_customer)
-        enterprise_contact_email = enterprise_customer.get('contact_email')
-        enterprise_default_language = enterprise_customer.get('default_language') or ''
-
-        expiration_date = license_obj.subscription_plan.expiration_date
-        delta = localized_utcnow().date() - expiration_date.date()
-        days_since_expiration = delta.days
-
-        # Prepare Braze campaign trigger properties
-        trigger_properties = {
-            'enterprise_customer_slug': enterprise_slug,
-            'enterprise_customer_name': enterprise_name,
-            'enterprise_sender_alias': enterprise_sender_alias,
-            'enterprise_contact_email': enterprise_contact_email,
-            'expiration_date': expiration_date.strftime(BRAZE_TIMESTAMP_FORMAT),
-            'days_since_expiration': days_since_expiration,
-            'subscription_plan_title': license_obj.subscription_plan.title,
-        }
-
-        # Prepare recipient object
-        recipient = {
-            'attributes': {
-                'email': user_email,
-                'enterprise_default_language': enterprise_default_language,
-            },
-            'user_alias': {
-                'alias_label': ENTERPRISE_BRAZE_ALIAS_LABEL,
-                'alias_name': user_email,
-            },
-        }
-
         # Get Braze campaign ID from settings
         braze_campaign_id = getattr(settings, 'BRAZE_SUBSCRIPTION_PLAN_EXPIRATION_CAMPAIGN', None)
         if not braze_campaign_id:
@@ -193,20 +217,64 @@ class Command(BaseCommand):
                 'Please set this to the Braze campaign ID for subscription plan expiration emails.'
             )
 
-        # Send email via Braze
-        braze_client = api_utils.create_braze_alias_for_emails([user_email])
-        braze_client.send_campaign_message(
-            braze_campaign_id,
-            recipients=[recipient],
-            trigger_properties=trigger_properties,
-        )
+        enterprise_slug = enterprise_customer.get('slug')
+        enterprise_name = enterprise_customer.get('name')
+        enterprise_sender_alias = get_enterprise_sender_alias(enterprise_customer)
+        enterprise_contact_email = enterprise_customer.get('contact_email')
+        enterprise_default_language = enterprise_customer.get('default_language') or ''
 
-        logger.info(
-            f'Sent subscription plan expiration email to {user_email} for license {license_obj.uuid} '
-            f'with plan expired on {expiration_date.strftime(BRAZE_TIMESTAMP_FORMAT)}'
-        )
+        # Prepare recipients list for batch send
+        recipients = []
+        emails_list = []
 
-    def _process_enterprise_customer(self, enterprise_customer_uuid, days_since_expiration, dry_run):
+        for license_obj in licenses:
+            user_email = license_obj.user_email
+            expiration_date = license_obj.subscription_plan.expiration_date
+            delta = localized_utcnow().date() - expiration_date.date()
+            days_since_expiration = delta.days
+
+            recipient = {
+                'attributes': {
+                    'email': user_email,
+                    'enterprise_default_language': enterprise_default_language,
+                },
+                'user_alias': {
+                    'alias_label': ENTERPRISE_BRAZE_ALIAS_LABEL,
+                    'alias_name': user_email,
+                },
+                'trigger_properties': {
+                    'enterprise_customer_slug': enterprise_slug,
+                    'enterprise_customer_name': enterprise_name,
+                    'enterprise_sender_alias': enterprise_sender_alias,
+                    'enterprise_contact_email': enterprise_contact_email,
+                    'expiration_date': expiration_date.strftime(BRAZE_TIMESTAMP_FORMAT),
+                    'days_since_expiration': days_since_expiration,
+                    'subscription_plan_title': license_obj.subscription_plan.title,
+                },
+            }
+            recipients.append(recipient)
+            emails_list.append(user_email)
+
+        # Create Braze aliases for all emails in batch
+        braze_client = api_utils.create_braze_alias_for_emails(emails_list)
+
+        # Send batch via Braze
+        try:
+            braze_client.send_campaign_message(
+                braze_campaign_id,
+                recipients=recipients,
+            )
+            logger.info(
+                f'Successfully sent subscription plan expiration emails to batch of {len(licenses)} licenses'
+            )
+            return licenses, []
+        except BrazeClientError as exc:
+            logger.exception(
+                f'Failed to send subscription plan expiration batch for {len(licenses)} licenses: {exc}'
+            )
+            return [], licenses
+
+    def _process_enterprise_customer(self, enterprise_customer_uuid, days_since_expiration, dry_run, batch_size):
         """
         Process subscription plan expiration emails for a single enterprise customer.
 
@@ -214,35 +282,44 @@ class Command(BaseCommand):
             enterprise_customer_uuid (str): UUID of the enterprise customer
             days_since_expiration (int): Number of days since expiration to process
             dry_run (bool): If True, only log which licenses would be processed
+            batch_size (int): Number of licenses to process in each batch
 
         Returns:
             dict: Dictionary with 'success_count' and 'failure_count' keys
         """
         logger.info(
             f'Processing enterprise {enterprise_customer_uuid}, '
-            f'days_since_expiration={days_since_expiration}, dry_run={dry_run}'
+            f'days_since_expiration={days_since_expiration}, dry_run={dry_run}, batch_size={batch_size}'
         )
 
-        # Get licenses with recently expired subscription plans
-        licenses = self._get_recently_expired_plan_licenses(enterprise_customer_uuid, days_since_expiration)
+        # Get count of licenses with recently expired subscription plans for logging
+        licenses_count_queryset = self._get_recently_expired_plan_licenses(enterprise_customer_uuid, days_since_expiration)
+        total_count = licenses_count_queryset.count()
 
-        if not licenses.exists():
+        if total_count == 0:
             logger.info(
                 f'No activated licenses found with subscription plans expired in the last {days_since_expiration} days '
                 f'for enterprise {enterprise_customer_uuid}'
             )
             return {'success_count': 0, 'failure_count': 0}
 
-        logger.info(f'Found {licenses.count()} licenses to process for enterprise {enterprise_customer_uuid}')
+        logger.info(f'Found {total_count} licenses to process for enterprise {enterprise_customer_uuid}')
 
         if dry_run:
             logger.info(f'DRY RUN - Would send subscription plan expiration emails for enterprise {enterprise_customer_uuid}:')
-            for license_obj in licenses:
-                logger.info(
-                    f'  License UUID: {license_obj.uuid}, '
-                    f'User Email: {license_obj.user_email}, '
-                    f'Expiration Date: {license_obj.subscription_plan.expiration_date.strftime("%Y-%m-%d")}'
-                )
+            batch_num = 0
+            for license_batch in self._get_recently_expired_plan_licenses_in_batches(
+                enterprise_customer_uuid, days_since_expiration, batch_size
+            ):
+                batch_num += 1
+                license_list = list(license_batch)
+                logger.info(f'  Batch {batch_num} ({len(license_list)} licenses):')
+                for license_obj in license_list:
+                    logger.info(
+                        f'    License UUID: {license_obj.uuid}, '
+                        f'User Email: {license_obj.user_email}, '
+                        f'Expiration Date: {license_obj.subscription_plan.expiration_date.strftime("%Y-%m-%d")}'
+                    )
             return {'success_count': 0, 'failure_count': 0}
 
         # Get enterprise customer data from API
@@ -255,29 +332,47 @@ class Command(BaseCommand):
             )
             raise
 
-        # Send emails for each license
+        # Process licenses in batches
         success_count = 0
         failure_count = 0
+        batch_num = 0
 
-        for license_obj in licenses:
+        for license_batch in self._get_recently_expired_plan_licenses_in_batches(
+            enterprise_customer_uuid, days_since_expiration, batch_size
+        ):
+            batch_num += 1
+            license_list = list(license_batch)
+            logger.info(
+                f'Processing batch {batch_num} with {len(license_list)} licenses for enterprise {enterprise_customer_uuid}'
+            )
+
             try:
-                self._send_subscription_expiration_email(license_obj, enterprise_customer)
-                # Mark the license as having received a subscription plan expiration email
-                license_obj.subscription_plan_expiration_email_sent_date = localized_utcnow()
-                license_obj.save(update_fields=['subscription_plan_expiration_email_sent_date'])
-                success_count += 1
-            except ValueError as exc:
-                raise
-            except BrazeClientError as exc:
-                logger.exception(
-                    f'Failed to send subscription plan expiration email for license {license_obj.uuid}: {exc}'
+                successful_licenses, failed_licenses = self._send_subscription_expiration_emails_batch(
+                    license_list, enterprise_customer
                 )
-                failure_count += 1
+
+                # Mark successful licenses as having received a subscription plan expiration email
+                if successful_licenses:
+                    now = localized_utcnow()
+                    for license_obj in successful_licenses:
+                        license_obj.subscription_plan_expiration_email_sent_date = now
+                    License.bulk_update(successful_licenses, ['subscription_plan_expiration_email_sent_date'])
+
+                    success_count += len(successful_licenses)
+                    logger.info(f'Batch {batch_num}: Marked {len(successful_licenses)} licenses as sent')
+
+                if failed_licenses:
+                    failure_count += len(failed_licenses)
+                    logger.warning(f'Batch {batch_num}: {len(failed_licenses)} licenses failed to send')
+
+            except ValueError as exc:
+                # Configuration error - re-raise immediately
+                raise
             except Exception as exc:
                 logger.exception(
-                    f'Unexpected error sending subscription plan expiration email for license {license_obj.uuid}: {exc}'
+                    f'Unexpected error processing batch {batch_num} for enterprise {enterprise_customer_uuid}: {exc}'
                 )
-                failure_count += 1
+                failure_count += len(license_list)
 
         logger.info(
             f'Completed processing for enterprise {enterprise_customer_uuid}. '
@@ -293,6 +388,7 @@ class Command(BaseCommand):
         enterprise_customer_uuids_string = options['enterprise_customer_uuid']
         days_since_expiration = options['days_since_expiration']
         dry_run = options['dry_run']
+        batch_size = options['batch_size']
 
         # Parse the enterprise customer UUIDs
         enterprise_customer_uuids = self._parse_enterprise_customer_uuids(enterprise_customer_uuids_string)
@@ -303,7 +399,8 @@ class Command(BaseCommand):
 
         logger.info(
             f'Starting send_subscription_plan_expiration_emails command for {len(enterprise_customer_uuids)} '
-            f'enterprise customer(s), days_since_expiration={days_since_expiration}, dry_run={dry_run}'
+            f'enterprise customer(s), days_since_expiration={days_since_expiration}, '
+            f'batch_size={batch_size}, dry_run={dry_run}'
         )
 
         # Process each enterprise customer
@@ -316,7 +413,8 @@ class Command(BaseCommand):
                 result = self._process_enterprise_customer(
                     enterprise_customer_uuid,
                     days_since_expiration,
-                    dry_run
+                    dry_run,
+                    batch_size
                 )
                 total_success_count += result['success_count']
                 total_failure_count += result['failure_count']

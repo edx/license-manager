@@ -1552,9 +1552,8 @@ class License(TimeStampedModel):
         offset = 0
         while queryset.exists():
             yield queryset
-            # queryset.last() doesn't work here because we've already sliced it above.
-            # We have to loop through (by list-ing) it in order to grab the last one.
-            offset = list(queryset)[-1].pk
+            # Use values_list to efficiently fetch only the pk without materializing full objects
+            offset = list(queryset.values_list('pk', flat=True))[-1]
             queryset = base_queryset.filter(pk__gt=offset)[:batch_size]
 
     @classmethod

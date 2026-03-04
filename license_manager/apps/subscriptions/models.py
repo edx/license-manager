@@ -508,9 +508,6 @@ class Product(models.Model):
     )
     history = HistoricalRecords()
 
-    class Meta:
-        constraints = [models.UniqueConstraint(fields=("netsuite_id",), name="unique_netsuite_id")]
-
     def __str__(self):
         return self.name
 

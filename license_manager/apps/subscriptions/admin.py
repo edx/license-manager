@@ -793,7 +793,6 @@ class ProductAdmin(admin.ModelAdmin):
         'salesforce_product_id',
     )
     list_display = fields
-    readonly_fields = ['netsuite_id']
     ordering = (
         'plan_type',
         'name',

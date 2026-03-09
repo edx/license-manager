@@ -35,11 +35,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.3.0
     # via -r requirements/validation.txt
-boto3==1.42.49
+boto3==1.42.63
     # via
     #   -r requirements/validation.txt
     #   django-ses
-botocore==1.42.49
+botocore==1.42.63
     # via
     #   -r requirements/validation.txt
     #   boto3
@@ -53,7 +53,7 @@ celery==5.6.2
     #   -r requirements/validation.txt
     #   django-celery-results
     #   edx-celeryutils
-certifi==2026.1.4
+certifi==2026.2.25
     # via
     #   -r requirements/validation.txt
     #   requests
@@ -62,7 +62,7 @@ cffi==2.0.0
     #   -r requirements/validation.txt
     #   cryptography
     #   pynacl
-charset-normalizer==3.4.4
+charset-normalizer==3.4.5
     # via
     #   -r requirements/validation.txt
     #   requests
@@ -95,7 +95,7 @@ click-repl==0.3.0
     # via
     #   -r requirements/validation.txt
     #   celery
-code-annotations==2.3.0
+code-annotations==2.3.2
     # via
     #   -r requirements/validation.txt
     #   edx-lint
@@ -125,7 +125,7 @@ dill==0.4.1
     # via
     #   -r requirements/validation.txt
     #   pylint
-django==5.2.11
+django==5.2.12
     # via
     #   -c requirements/common_constraints.txt
     #   -r requirements/validation.txt
@@ -179,14 +179,14 @@ django-extensions==4.1
     #   -r requirements/validation.txt
 django-filter==25.2
     # via -r requirements/validation.txt
-django-log-request-id==2.1.0
+django-log-request-id==2.1.1
     # via -r requirements/validation.txt
 django-model-utils==5.0.0
     # via
     #   -r requirements/validation.txt
     #   edx-celeryutils
     #   edx-rbac
-django-ses==4.7.1
+django-ses==4.7.2
     # via -r requirements/validation.txt
 django-simple-history==3.11.0
     # via -r requirements/validation.txt
@@ -243,7 +243,7 @@ edx-i18n-tools==1.9.0
     # via -r requirements/validation.txt
 edx-lint==5.6.0
     # via -r requirements/validation.txt
-edx-opaque-keys==3.0.0
+edx-opaque-keys==3.1.0
     # via
     #   -r requirements/validation.txt
     #   edx-drf-extensions
@@ -257,7 +257,7 @@ edx-toggles==5.4.1
     #   edx-auth-backends
 factory-boy==3.3.3
     # via -r requirements/validation.txt
-faker==40.4.0
+faker==40.8.0
     # via
     #   -r requirements/validation.txt
     #   factory-boy
@@ -281,7 +281,7 @@ iniconfig==2.3.0
     # via
     #   -r requirements/validation.txt
     #   pytest
-isort==7.0.0
+isort==8.0.1
     # via
     #   -r requirements/validation.txt
     #   pylint
@@ -319,7 +319,7 @@ lxml[html-clean]==6.0.2
     #   -r requirements/validation.txt
     #   edx-i18n-tools
     #   lxml-html-clean
-lxml-html-clean==0.4.3
+lxml-html-clean==0.4.4
     # via
     #   -r requirements/validation.txt
     #   lxml
@@ -362,7 +362,7 @@ pathlib2==2.3.7.post1
     # via -r requirements/validation.txt
 pip-tools==7.5.3
     # via -r requirements/pip-tools.txt
-platformdirs==4.9.1
+platformdirs==4.9.4
     # via
     #   -r requirements/validation.txt
     #   pylint
@@ -409,7 +409,7 @@ pyjwt[crypto]==2.11.0
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   social-auth-core
-pylint==4.0.4
+pylint==4.0.5
     # via
     #   -r requirements/validation.txt
     #   edx-lint
@@ -466,7 +466,7 @@ python3-openid==3.2.0
     # via
     #   -r requirements/validation.txt
     #   social-auth-core
-pytz==2025.2
+pytz==2026.1.post1
     # via -r requirements/validation.txt
 pywatchman==3.0.0
     # via -r requirements/dev.in
@@ -476,7 +476,7 @@ pyyaml==6.0.3
     #   code-annotations
     #   drf-spectacular
     #   edx-i18n-tools
-redis==7.1.1
+redis==7.3.0
     # via -r requirements/validation.txt
 referencing==0.37.0
     # via
@@ -539,7 +539,7 @@ sqlparse==0.5.5
     #   -r requirements/validation.txt
     #   django
     #   django-debug-toolbar
-stevedore==5.6.0
+stevedore==5.7.0
     # via
     #   -r requirements/validation.txt
     #   code-annotations
@@ -557,7 +557,7 @@ tomlkit==0.14.0
     # via
     #   -r requirements/validation.txt
     #   pylint
-typeguard==4.5.0
+typeguard==4.5.1
     # via inflect
 typing-extensions==4.15.0
     # via

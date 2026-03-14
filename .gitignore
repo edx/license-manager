@@ -101,9 +101,8 @@ docs/_build/
 # pyenv
 .python-version
 
-# LLMs/AI
-*CLAUDE.md
-.claude/
+# claude code personalization
+.claude/settings.local.json
 
 # Ralph
 .ralph/.*

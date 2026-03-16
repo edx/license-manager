@@ -164,9 +164,12 @@ class SendSubscriptionPlanExpirationEmailsTests(TestCase):
             # Verify success messages
             assert any('Success: 2' in msg for msg in log.output)
 
-        # Verify Braze API was called correctly
-        assert mock_create_braze_alias.call_count == 2
-        assert mock_braze_instance.send_campaign_message.call_count == 2
+        # Verify Braze API was called correctly (batch of 2 licenses in 1 call)
+        assert mock_create_braze_alias.call_count == 1
+        assert mock_braze_instance.send_campaign_message.call_count == 1
+        # Verify the batch contained both emails
+        call_args = mock_create_braze_alias.call_args[0][0]
+        assert len(call_args) == 2
 
     @override_settings(BRAZE_SUBSCRIPTION_PLAN_EXPIRATION_CAMPAIGN='test-campaign-id')
     @mock.patch(
@@ -232,7 +235,8 @@ class SendSubscriptionPlanExpirationEmailsTests(TestCase):
             # Verify only 1 license was processed (the activated one)
             assert any('Success: 1' in msg for msg in log.output)
 
-        # Verify only one email was sent
+        # Verify only one email was sent (1 batch with 1 license)
+        assert mock_create_braze_alias.call_count == 1
         assert mock_braze_instance.send_campaign_message.call_count == 1
 
     @override_settings(BRAZE_SUBSCRIPTION_PLAN_EXPIRATION_CAMPAIGN='test-campaign-id')
@@ -521,9 +525,9 @@ class SendSubscriptionPlanExpirationEmailsTests(TestCase):
             assert any('2 enterprise customer(s)' in msg for msg in log.output)
             assert any('Total Success: 5' in msg for msg in log.output)
 
-        # Verify Braze API was called for all 5 licenses
-        assert mock_create_braze_alias.call_count == 5
-        assert mock_braze_instance.send_campaign_message.call_count == 5
+        # Verify Braze API was called (2 batches, one per enterprise)
+        assert mock_create_braze_alias.call_count == 2
+        assert mock_braze_instance.send_campaign_message.call_count == 2
 
     @override_settings(BRAZE_SUBSCRIPTION_PLAN_EXPIRATION_CAMPAIGN='test-campaign-id')
     @mock.patch(
@@ -589,9 +593,9 @@ class SendSubscriptionPlanExpirationEmailsTests(TestCase):
             assert any('Total Success: 2' in msg for msg in log.output)
             assert any(f'No activated licenses found' in msg for msg in log.output)
 
-        # Verify Braze API was called only for first enterprise's 2 licenses
-        assert mock_create_braze_alias.call_count == 2
-        assert mock_braze_instance.send_campaign_message.call_count == 2
+        # Verify Braze API was called only for first enterprise (1 batch with 2 licenses)
+        assert mock_create_braze_alias.call_count == 1
+        assert mock_braze_instance.send_campaign_message.call_count == 1
 
     @override_settings(BRAZE_SUBSCRIPTION_PLAN_EXPIRATION_CAMPAIGN='test-campaign-id')
     @mock.patch(
@@ -670,7 +674,9 @@ class SendSubscriptionPlanExpirationEmailsTests(TestCase):
 
         if message_sent:
             assert mock_braze_instance.send_campaign_message.call_count == 1
-            trigger_properties = mock_braze_instance.send_campaign_message.call_args[1]['trigger_properties']
+            # Extract trigger_properties from the first recipient in the batch
+            recipients = mock_braze_instance.send_campaign_message.call_args[1]['recipients']
+            trigger_properties = recipients[0]['trigger_properties']
             # days_since_expiration is calculated as the difference between today and expiration date
             # For Feb 10: Feb 10 - Feb 4 = 6 days
             # For Feb 11: Feb 11 - Feb 4 = 7 days
@@ -783,9 +789,9 @@ class SendSubscriptionPlanExpirationEmailsTests(TestCase):
             # Should only find 2 licenses (the ones without subscription_plan_expiration_email_sent_date)
             assert any('Found 2 licenses to process' in msg for msg in log.output)
 
-        # Verify Braze API was called only for the 2 licenses without the email
-        assert mock_create_braze_alias.call_count == 2
-        assert mock_braze_instance.send_campaign_message.call_count == 2
+        # Verify Braze API was called only for the 2 licenses without the email (1 batch)
+        assert mock_create_braze_alias.call_count == 1
+        assert mock_braze_instance.send_campaign_message.call_count == 1
 
     @mock.patch('license_manager.apps.api.utils.create_braze_alias_for_emails')
     @mock.patch(

@@ -161,9 +161,12 @@ class SendLicenseExpirationRemindersTests(TestCase):
             # Verify success messages
             assert any('Success: 2' in msg for msg in log.output)
 
-        # Verify Braze API was called correctly
-        assert mock_create_braze_alias.call_count == 2
-        assert mock_braze_instance.send_campaign_message.call_count == 2
+        # Verify Braze API was called correctly (batch of 2 licenses in 1 call)
+        assert mock_create_braze_alias.call_count == 1
+        assert mock_braze_instance.send_campaign_message.call_count == 1
+        # Verify the batch contained both emails
+        call_args = mock_create_braze_alias.call_args[0][0]
+        assert len(call_args) == 2
 
     @override_settings(BRAZE_LICENSE_EXPIRATION_REMINDER_CAMPAIGN='test-campaign-id')
     @mock.patch('license_manager.apps.subscriptions.management.commands.send_license_expiration_reminders.EnterpriseApiClient')
@@ -226,7 +229,8 @@ class SendLicenseExpirationRemindersTests(TestCase):
             # Verify only 1 license was processed (the activated one)
             assert any('Success: 1' in msg for msg in log.output)
 
-        # Verify only one email was sent
+        # Verify only one email was sent (1 batch with 1 license)
+        assert mock_create_braze_alias.call_count == 1
         assert mock_braze_instance.send_campaign_message.call_count == 1
 
     @override_settings(BRAZE_LICENSE_EXPIRATION_REMINDER_CAMPAIGN='test-campaign-id')
@@ -490,9 +494,9 @@ class SendLicenseExpirationRemindersTests(TestCase):
             assert any('2 enterprise customer(s)' in msg for msg in log.output)
             assert any('Total Success: 5' in msg for msg in log.output)
 
-        # Verify Braze API was called for all 5 licenses
-        assert mock_create_braze_alias.call_count == 5
-        assert mock_braze_instance.send_campaign_message.call_count == 5
+        # Verify Braze API was called (2 batches, one per enterprise)
+        assert mock_create_braze_alias.call_count == 2
+        assert mock_braze_instance.send_campaign_message.call_count == 2
 
     @override_settings(BRAZE_LICENSE_EXPIRATION_REMINDER_CAMPAIGN='test-campaign-id')
     @mock.patch('license_manager.apps.subscriptions.management.commands.send_license_expiration_reminders.EnterpriseApiClient')
@@ -569,9 +573,9 @@ class SendLicenseExpirationRemindersTests(TestCase):
             assert any('2 enterprise customer(s)' in msg for msg in log.output)
             assert any('Total Success: 3' in msg for msg in log.output)
 
-        # Verify Braze API was called for all 3 licenses
-        assert mock_create_braze_alias.call_count == 3
-        assert mock_braze_instance.send_campaign_message.call_count == 3
+        # Verify Braze API was called (2 batches, one per enterprise)
+        assert mock_create_braze_alias.call_count == 2
+        assert mock_braze_instance.send_campaign_message.call_count == 2
 
     @override_settings(BRAZE_LICENSE_EXPIRATION_REMINDER_CAMPAIGN='test-campaign-id')
     @mock.patch('license_manager.apps.subscriptions.management.commands.send_license_expiration_reminders.EnterpriseApiClient')
@@ -634,9 +638,9 @@ class SendLicenseExpirationRemindersTests(TestCase):
             assert any('Total Success: 2' in msg for msg in log.output)
             assert any(f'No activated licenses found' in msg for msg in log.output)
 
-        # Verify Braze API was called only for first enterprise's 2 licenses
-        assert mock_create_braze_alias.call_count == 2
-        assert mock_braze_instance.send_campaign_message.call_count == 2
+        # Verify Braze API was called only for first enterprise (1 batch with 2 licenses)
+        assert mock_create_braze_alias.call_count == 1
+        assert mock_braze_instance.send_campaign_message.call_count == 1
 
     @override_settings(BRAZE_LICENSE_EXPIRATION_REMINDER_CAMPAIGN='test-campaign-id')
     @mock.patch('license_manager.apps.subscriptions.management.commands.send_license_expiration_reminders.localized_utcnow')
@@ -712,7 +716,9 @@ class SendLicenseExpirationRemindersTests(TestCase):
 
         if message_sent:
             assert mock_braze_instance.send_campaign_message.call_count == 1
-            trigger_properties = mock_braze_instance.send_campaign_message.call_args[1]['trigger_properties']
+            # Extract trigger_properties from the first recipient in the batch
+            recipients = mock_braze_instance.send_campaign_message.call_args[1]['recipients']
+            trigger_properties = recipients[0]['trigger_properties']
             assert trigger_properties['days_until_expiration'] == 30
         else:
             assert mock_braze_instance.send_campaign_message.call_count == 0
@@ -813,9 +819,9 @@ class SendLicenseExpirationRemindersTests(TestCase):
             # Should only find 2 licenses (the ones without expiration_reminder_sent_date)
             assert any('Found 2 licenses to process' in msg for msg in log.output)
 
-        # Verify Braze API was called only for the 2 licenses without the reminder
-        assert mock_create_braze_alias.call_count == 2
-        assert mock_braze_instance.send_campaign_message.call_count == 2
+        # Verify Braze API was called only for the 2 licenses without the reminder (1 batch)
+        assert mock_create_braze_alias.call_count == 1
+        assert mock_braze_instance.send_campaign_message.call_count == 1
 
     @mock.patch('license_manager.apps.api.utils.create_braze_alias_for_emails')
     @mock.patch('license_manager.apps.subscriptions.management.commands.send_license_expiration_reminders.EnterpriseApiClient')
@@ -861,3 +867,68 @@ class SendLicenseExpirationRemindersTests(TestCase):
 
         # Verify expiration_reminder_sent_date is still None (not set on failure)
         assert license_obj.expiration_reminder_sent_date is None
+
+    @override_settings(BRAZE_LICENSE_EXPIRATION_REMINDER_CAMPAIGN='test-campaign-id')
+    @mock.patch('license_manager.apps.subscriptions.management.commands.send_license_expiration_reminders.EnterpriseApiClient')
+    @mock.patch('license_manager.apps.api.utils.create_braze_alias_for_emails')
+    def test_batch_size_honored_with_multiple_batches(self, mock_create_braze_alias, mock_enterprise_client):
+        """
+        Test that batch_size is honored when number of licenses exceeds batch size.
+
+        Verifies that with N licenses and batch_size=M, there are ceil(N/M) Braze API calls.
+        This locks in the batching behavior for the new pk-based pagination pattern.
+        """
+        # Setup mocks
+        mock_enterprise_instance = mock_enterprise_client.return_value
+        mock_enterprise_instance.get_enterprise_customer_data.return_value = {
+            'uuid': str(self.enterprise_customer_uuid),
+            'slug': 'test-enterprise',
+            'name': 'Test Enterprise',
+            'contact_email': 'contact@example.com',
+            'default_language': 'en',
+        }
+
+        mock_braze_instance = mock.Mock()
+        mock_braze_instance.send_campaign_message.return_value = None
+        mock_create_braze_alias.return_value = mock_braze_instance
+
+        # Create 7 licenses expiring in 30 days
+        # With batch_size=3, this should result in 3 batches: [3, 3, 1]
+        subscription_plan, licenses = self._create_subscription_with_licenses(
+            expiration_days_from_now=30,
+            num_licenses=7
+        )
+
+        # Run command with batch_size=3
+        with self.assertLogs(level='INFO') as log:
+            call_command(
+                self.command_name,
+                enterprise_customer_uuid=str(self.enterprise_customer_uuid),
+                days_before_expiration=30,
+                batch_size=3,
+            )
+
+            # Verify all 7 licenses were processed successfully
+            assert any('Success: 7' in msg for msg in log.output)
+
+        # Verify Braze API was called 3 times (ceil(7/3) = 3 batches)
+        assert mock_braze_instance.send_campaign_message.call_count == 3
+        assert mock_create_braze_alias.call_count == 3
+
+        # Verify the batch sizes were correct
+        # First batch: 3 recipients
+        first_call_emails = mock_create_braze_alias.call_args_list[0][0][0]
+        assert len(first_call_emails) == 3
+
+        # Second batch: 3 recipients
+        second_call_emails = mock_create_braze_alias.call_args_list[1][0][0]
+        assert len(second_call_emails) == 3
+
+        # Third batch: 1 recipient (remaining)
+        third_call_emails = mock_create_braze_alias.call_args_list[2][0][0]
+        assert len(third_call_emails) == 1
+
+        # Verify all licenses received their reminder timestamp
+        for license_obj in licenses:
+            license_obj.refresh_from_db()
+            assert license_obj.expiration_reminder_sent_date is not None

@@ -19,7 +19,7 @@ astroid==4.0.4
     # via
     #   pylint
     #   pylint-celery
-attrs==25.4.0
+attrs==26.1.0
     # via
     #   -r requirements/base.txt
     #   jsonschema
@@ -34,11 +34,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.3.0
     # via -r requirements/base.txt
-boto3==1.42.68
+boto3==1.42.73
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.42.68
+botocore==1.42.73
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -92,7 +92,7 @@ code-annotations==3.0.0
     #   -r requirements/test.in
     #   edx-lint
     #   edx-toggles
-coverage[toml]==7.13.4
+coverage[toml]==7.13.5
     # via
     #   -r requirements/test.in
     #   pytest-cov
@@ -175,7 +175,7 @@ django-waffle==5.0.0
     #   edx-toggles
 djangoql==0.19.1
     # via -r requirements/base.txt
-djangorestframework==3.16.1
+djangorestframework==3.17.0
     # via
     #   -r requirements/base.txt
     #   djangorestframework-csv
@@ -353,7 +353,7 @@ pytest==9.0.2
     # via
     #   pytest-cov
     #   pytest-django
-pytest-cov==7.0.0
+pytest-cov==7.1.0
     # via -r requirements/test.in
 pytest-django==4.12.0
     # via -r requirements/test.in

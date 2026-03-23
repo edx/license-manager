@@ -19,7 +19,7 @@ astroid==4.0.4
     # via
     #   pylint
     #   pylint-celery
-attrs==25.4.0
+attrs==26.1.0
     # via
     #   -r requirements/base.txt
     #   jsonschema
@@ -34,11 +34,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.3.0
     # via -r requirements/base.txt
-boto3==1.42.68
+boto3==1.42.73
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.42.68
+botocore==1.42.73
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -167,7 +167,7 @@ django-waffle==5.0.0
     #   edx-toggles
 djangoql==0.19.1
     # via -r requirements/base.txt
-djangorestframework==3.16.1
+djangorestframework==3.17.0
     # via
     #   -r requirements/base.txt
     #   djangorestframework-csv

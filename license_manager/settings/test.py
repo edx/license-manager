@@ -48,3 +48,7 @@ DEBUG = False
 DEBUG_TOOLBAR_CONFIG = {
     "SHOW_TOOLBAR_CALLBACK": False,
 }
+
+# A faster (but less secure) password hasher like MD5 makes UserFactory faster, shaving ~80% off
+# test runtimes compared with the more secure PBKDF2-based hasher used in production.
+PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']

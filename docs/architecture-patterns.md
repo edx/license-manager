@@ -16,9 +16,14 @@ Licenses follow a state machine pattern with specific allowed transitions:
 
 - `unassigned` -> `assigned` -> `activated` -> `revoked`
 - Licenses can be "unrevoked" under certain conditions (see ADR 0005)
-- All state changes are tracked via `LicenseEvent` for audit trails
+- Status transitions are primarily audited via `django-simple-history` (`License.history`)
+  together with the `status` and related date fields on `License`
+- `LicenseEvent` records are used for certain triggered workflows (for example, specific
+  management commands), not as a required record for every status transition
 
-When modifying license status, always create corresponding `LicenseEvent` records.
+When modifying license status, update the `License` fields consistently so the change is
+captured in model history. Create `LicenseEvent` records only where the workflow explicitly
+uses them for additional event tracking.
 
 ### Subscription Plan Renewals
 

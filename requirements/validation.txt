@@ -45,12 +45,12 @@ bleach[css]==6.3.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
-boto3==1.42.88
+boto3==1.42.91
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   django-ses
-botocore==1.42.88
+botocore==1.42.91
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -313,7 +313,7 @@ edx-toggles==6.0.0
     #   edx-auth-backends
 factory-boy==3.3.3
     # via -r requirements/test.txt
-faker==40.13.0
+faker==40.15.0
     # via
     #   -r requirements/test.txt
     #   factory-boy
@@ -369,7 +369,7 @@ kombu==5.6.2
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   celery
-lxml[html-clean]==6.0.4
+lxml[html-clean]==6.1.0
     # via
     #   edx-i18n-tools
     #   lxml-html-clean
@@ -400,7 +400,7 @@ oauthlib==3.3.1
     #   -r requirements/test.txt
     #   requests-oauthlib
     #   social-auth-core
-packaging==26.0
+packaging==26.1
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -577,7 +577,7 @@ semantic-version==2.10.0
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   edx-drf-extensions
-simplejson==3.20.2
+simplejson==4.0.1
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -678,7 +678,7 @@ webencodings==0.5.1
     #   -r requirements/test.txt
     #   bleach
     #   tinycss2
-zipp==3.23.0
+zipp==3.23.1
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt

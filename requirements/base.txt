@@ -24,9 +24,9 @@ billiard==4.2.4
     # via celery
 bleach[css]==6.3.0
     # via -r requirements/base.in
-boto3==1.42.88
+boto3==1.42.91
     # via django-ses
-botocore==1.42.88
+botocore==1.42.91
     # via
     #   boto3
     #   s3transfer
@@ -204,7 +204,7 @@ oauthlib==3.3.1
     # via
     #   requests-oauthlib
     #   social-auth-core
-packaging==26.0
+packaging==26.1
     # via kombu
 ply==3.11
     # via djangoql
@@ -265,7 +265,7 @@ s3transfer==0.16.0
     # via boto3
 semantic-version==2.10.0
     # via edx-drf-extensions
-simplejson==3.20.2
+simplejson==4.0.1
     # via -r requirements/base.in
 six==1.17.0
     # via
@@ -315,7 +315,7 @@ webencodings==0.5.1
     # via
     #   bleach
     #   tinycss2
-zipp==3.23.0
+zipp==3.23.1
     # via -r requirements/base.in
 
 # The following packages are considered to be unsafe in a requirements file:

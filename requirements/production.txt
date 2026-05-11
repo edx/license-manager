@@ -31,11 +31,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.3.0
     # via -r requirements/base.txt
-boto3==1.43.2
+boto3==1.43.6
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.43.2
+botocore==1.43.6
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -83,7 +83,7 @@ code-annotations==3.0.0
     # via
     #   -r requirements/base.txt
     #   edx-toggles
-cryptography==47.0.0
+cryptography==48.0.0
     # via
     #   -r requirements/base.txt
     #   pyjwt
@@ -93,7 +93,7 @@ defusedxml==0.7.1
     #   -r requirements/base.txt
     #   python3-openid
     #   social-auth-core
-django==5.2.13
+django==5.2.14
     # via
     #   -c requirements/common_constraints.txt
     #   -r requirements/base.txt
@@ -215,9 +215,9 @@ gevent==26.4.0
     # via -r requirements/production.in
 greenlet==3.5.0
     # via gevent
-gunicorn==25.3.0
+gunicorn==26.0.0
     # via -r requirements/production.in
-idna==3.13
+idna==3.14
     # via
     #   -r requirements/base.txt
     #   requests
@@ -415,7 +415,7 @@ uritemplate==4.2.0
     # via
     #   -r requirements/base.txt
     #   drf-spectacular
-urllib3==2.6.3
+urllib3==2.7.0
     # via
     #   -r requirements/base.txt
     #   botocore

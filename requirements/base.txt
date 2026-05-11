@@ -25,9 +25,9 @@ billiard==4.2.4
     # via celery
 bleach[css]==6.3.0
     # via -r requirements/base.in
-boto3==1.43.2
+boto3==1.43.6
     # via django-ses
-botocore==1.43.2
+botocore==1.43.6
     # via
     #   boto3
     #   s3transfer
@@ -60,7 +60,7 @@ click-repl==0.3.0
     # via celery
 code-annotations==3.0.0
     # via edx-toggles
-cryptography==47.0.0
+cryptography==48.0.0
     # via
     #   pyjwt
     #   social-auth-core
@@ -68,7 +68,7 @@ defusedxml==0.7.1
     # via
     #   python3-openid
     #   social-auth-core
-django==5.2.13
+django==5.2.14
     # via
     #   -c requirements/common_constraints.txt
     #   -r requirements/base.in
@@ -179,7 +179,7 @@ edx-toggles==6.0.0
     # via
     #   -r requirements/base.in
     #   edx-auth-backends
-idna==3.13
+idna==3.14
     # via requests
 inflection==0.5.1
     # via drf-spectacular
@@ -303,7 +303,7 @@ tzlocal==5.3.1
     # via celery
 uritemplate==4.2.0
     # via drf-spectacular
-urllib3==2.6.3
+urllib3==2.7.0
     # via
     #   botocore
     #   requests

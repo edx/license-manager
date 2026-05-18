@@ -35,11 +35,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.3.0
     # via -r requirements/base.txt
-boto3==1.43.6
+boto3==1.43.9
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.43.6
+botocore==1.43.9
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -62,7 +62,7 @@ charset-normalizer==3.4.7
     # via
     #   -r requirements/base.txt
     #   requests
-click==8.3.3
+click==8.4.0
     # via
     #   -r requirements/base.txt
     #   celery
@@ -234,11 +234,11 @@ edx-toggles==6.0.0
     #   edx-auth-backends
 factory-boy==3.3.3
     # via -r requirements/test.in
-faker==40.15.0
+faker==40.18.0
     # via factory-boy
 freezegun==1.5.5
     # via -r requirements/test.in
-idna==3.14
+idna==3.15
     # via
     #   -r requirements/base.txt
     #   requests
@@ -388,7 +388,7 @@ referencing==0.37.0
     #   -r requirements/base.txt
     #   jsonschema
     #   jsonschema-specifications
-requests==2.33.1
+requests==2.34.2
     # via
     #   -r requirements/base.txt
     #   analytics-python

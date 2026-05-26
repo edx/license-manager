@@ -19,7 +19,6 @@ License Manager is a Django-based microservice within the Open edX ecosystem tha
 - Write comprehensive tests with clear documentation
 - Follow Test-Driven Development when refactoring or modifying existing functionality
 - Always write tests for new functionality you implement
-- Make a note of when tests for some functionality have been completed. If you cannot run the tests, ask me to run them manually, then confirm whether they succeeded or failed.
 - Keep changes focused and minimal
 - Follow existing code patterns
 - Prefer the `ddt` package for parameterized tests to reduce code duplication
@@ -85,4 +84,11 @@ Always read `docs/architecture-patterns.md` before starting (if it exists).
 - Uses pytest with Django integration
 - Coverage reporting enabled by default
 - PII annotation checks required for Django models
-- Feature toggling via Waffle for gradual feature rollouts
+
+## Before opening a PR or pushing a branch
+
+Run a self-check on the diff before creating a PR or pushing:
+1. Compute effective LoC — exclude lockfiles, generated files, snapshots, and vendor code.
+2. Count effective touched files — exclude the above plus one-to-one test pairs.
+3. If effective LoC > 400 or effective files > 10, stop and propose a split before proceeding.
+4. Report the result inline before continuing.

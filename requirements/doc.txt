@@ -46,11 +46,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/test.txt
-boto3==1.43.24
+boto3==1.43.29
     # via
     #   -r requirements/test.txt
     #   django-ses
-botocore==1.43.24
+botocore==1.43.29
     # via
     #   -r requirements/test.txt
     #   boto3
@@ -109,7 +109,7 @@ coverage[toml]==7.14.1
     # via
     #   -r requirements/test.txt
     #   pytest-cov
-cryptography==48.0.0
+cryptography==49.0.0
     # via
     #   -r requirements/test.txt
     #   pyjwt
@@ -258,7 +258,7 @@ edx-toggles==6.0.0
     #   edx-auth-backends
 factory-boy==3.3.3
     # via -r requirements/test.txt
-faker==40.21.0
+faker==40.23.0
     # via
     #   -r requirements/test.txt
     #   factory-boy
@@ -379,7 +379,7 @@ pyjwt[crypto]==2.13.0
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   social-auth-core
-pylint==4.0.5
+pylint==4.0.6
     # via
     #   -r requirements/test.txt
     #   edx-lint
@@ -407,7 +407,7 @@ pynacl==1.6.2
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
-pytest==9.0.3
+pytest==9.1.0
     # via
     #   -r requirements/test.txt
     #   pytest-cov
@@ -438,7 +438,7 @@ pyyaml==6.0.3
     #   -r requirements/test.txt
     #   code-annotations
     #   drf-spectacular
-readme-renderer==44.0
+readme-renderer==45.0
     # via -r requirements/doc.in
 redis==8.0.0
     # via -r requirements/test.txt
@@ -575,7 +575,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.8.0
+wcwidth==0.8.1
     # via
     #   -r requirements/test.txt
     #   prompt-toolkit

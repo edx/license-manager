@@ -35,11 +35,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/base.txt
-boto3==1.43.24
+boto3==1.43.33
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.43.24
+botocore==1.43.33
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -49,7 +49,7 @@ celery==5.6.3
     #   -r requirements/base.txt
     #   django-celery-results
     #   edx-celeryutils
-certifi==2026.5.20
+certifi==2026.6.17
     # via
     #   -r requirements/base.txt
     #   requests
@@ -92,7 +92,7 @@ code-annotations==3.0.0
     #   -r requirements/base.txt
     #   edx-lint
     #   edx-toggles
-cryptography==48.0.0
+cryptography==49.0.0
     # via
     #   -r requirements/base.txt
     #   pyjwt
@@ -132,7 +132,7 @@ django==5.2.15
     #   edx-toggles
     #   jsonfield
     #   social-auth-app-django
-django-autocomplete-light==4.0.1
+django-autocomplete-light==5.0.0
     # via -r requirements/base.txt
 django-celery-results==2.6.0
     # via -r requirements/base.txt
@@ -312,7 +312,7 @@ pyjwt[crypto]==2.13.0
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   social-auth-core
-pylint==4.0.5
+pylint==4.0.6
     # via
     #   edx-lint
     #   pylint-celery
@@ -381,7 +381,7 @@ rpds-py==2026.5.1
     #   referencing
 rules==3.5
     # via -r requirements/base.txt
-s3transfer==0.18.0
+s3transfer==0.19.0
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -441,7 +441,7 @@ tzdata==2026.2
     # via
     #   -r requirements/base.txt
     #   kombu
-tzlocal==5.3.1
+tzlocal==5.4.3
     # via
     #   -r requirements/base.txt
     #   celery
@@ -460,7 +460,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.8.0
+wcwidth==0.8.1
     # via
     #   -r requirements/base.txt
     #   prompt-toolkit

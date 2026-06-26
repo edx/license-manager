@@ -31,11 +31,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/base.txt
-boto3==1.43.33
+boto3==1.43.36
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.43.33
+botocore==1.43.36
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -58,7 +58,7 @@ charset-normalizer==3.4.7
     # via
     #   -r requirements/base.txt
     #   requests
-click==8.4.1
+click==8.4.2
     # via
     #   -r requirements/base.txt
     #   celery
@@ -148,7 +148,7 @@ django-model-utils==5.0.0
     #   edx-rbac
 django-ses==4.7.2
     # via -r requirements/base.txt
-django-simple-history==3.11.0
+django-simple-history==3.12.0
     # via -r requirements/base.txt
 django-waffle==5.0.0
     # via
@@ -328,7 +328,7 @@ pyyaml==6.0.3
     #   -r requirements/production.in
     #   code-annotations
     #   drf-spectacular
-redis==8.0.0
+redis==8.0.1
     # via -r requirements/base.txt
 referencing==0.37.0
     # via
@@ -371,11 +371,11 @@ six==1.17.0
     #   edx-auth-backends
     #   edx-rbac
     #   python-dateutil
-social-auth-app-django==5.9.0
+social-auth-app-django==6.0.0
     # via
     #   -r requirements/base.txt
     #   edx-auth-backends
-social-auth-core==4.9.1
+social-auth-core==5.0.1
     # via
     #   -r requirements/base.txt
     #   edx-auth-backends

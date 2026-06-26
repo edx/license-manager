@@ -46,12 +46,12 @@ bleach[css]==6.4.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
-boto3==1.43.33
+boto3==1.43.36
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   django-ses
-botocore==1.43.33
+botocore==1.43.36
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -79,7 +79,7 @@ charset-normalizer==3.4.7
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   requests
-click==8.4.1
+click==8.4.2
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -117,7 +117,7 @@ code-annotations==3.0.0
     #   -r requirements/test.txt
     #   edx-lint
     #   edx-toggles
-coverage[toml]==7.14.1
+coverage[toml]==7.14.3
     # via
     #   -r requirements/test.txt
     #   pytest-cov
@@ -217,7 +217,7 @@ django-ses==4.7.2
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
-django-simple-history==3.11.0
+django-simple-history==3.12.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -497,7 +497,7 @@ pynacl==1.6.2
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   edx-django-utils
-pytest==9.1.0
+pytest==9.1.1
     # via
     #   -r requirements/test.txt
     #   pytest-cov
@@ -535,7 +535,7 @@ pyyaml==6.0.3
     #   code-annotations
     #   drf-spectacular
     #   edx-i18n-tools
-redis==8.0.0
+redis==8.0.1
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -597,12 +597,12 @@ snowballstemmer==3.1.1
     # via
     #   -r requirements/quality.txt
     #   pydocstyle
-social-auth-app-django==5.9.0
+social-auth-app-django==6.0.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   edx-auth-backends
-social-auth-core==4.9.1
+social-auth-core==5.0.1
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt

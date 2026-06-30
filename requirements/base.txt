@@ -25,9 +25,9 @@ billiard==4.2.4
     # via celery
 bleach[css]==6.4.0
     # via -r requirements/base.in
-boto3==1.43.33
+boto3==1.43.37
     # via django-ses
-botocore==1.43.33
+botocore==1.43.37
     # via
     #   boto3
     #   s3transfer
@@ -44,7 +44,7 @@ cffi==2.0.0
     #   pynacl
 charset-normalizer==3.4.7
     # via requests
-click==8.4.1
+click==8.4.2
     # via
     #   celery
     #   click-didyoumean
@@ -122,7 +122,7 @@ django-model-utils==5.0.0
     #   edx-rbac
 django-ses==4.7.2
     # via -r requirements/base.in
-django-simple-history==3.11.0
+django-simple-history==3.12.0
     # via -r requirements/base.in
 django-waffle==5.0.0
     # via
@@ -243,7 +243,7 @@ pyyaml==6.0.3
     # via
     #   code-annotations
     #   drf-spectacular
-redis==8.0.0
+redis==8.0.1
     # via -r requirements/base.in
 referencing==0.37.0
     # via
@@ -258,7 +258,7 @@ requests==2.34.2
     #   social-auth-core
 requests-oauthlib==2.0.0
     # via social-auth-core
-rpds-py==2026.5.1
+rpds-py==2026.6.3
     # via
     #   jsonschema
     #   referencing
@@ -277,9 +277,12 @@ six==1.17.0
     #   edx-rbac
     #   python-dateutil
 social-auth-app-django==5.9.0
-    # via edx-auth-backends
+    # via
+    #   -c requirements/constraints.txt
+    #   edx-auth-backends
 social-auth-core==4.9.1
     # via
+    #   -c requirements/constraints.txt
     #   edx-auth-backends
     #   social-auth-app-django
 sqlparse==0.5.5
@@ -299,7 +302,7 @@ typing-extensions==4.15.0
     #   referencing
 tzdata==2026.2
     # via kombu
-tzlocal==5.4.3
+tzlocal==5.4.4
     # via celery
 uritemplate==4.2.0
     # via drf-spectacular
@@ -312,7 +315,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.8.1
+wcwidth==0.8.2
     # via prompt-toolkit
 webencodings==0.5.1
     # via

@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                         serialize=False,
                     ),
                 ),
-                ("enterprise_customer_uuid", models.UUIDField(db_index=True)),
+                ("enterprise_customer_uuid", models.UUIDField()),
                 (
                     "action_type",
                     models.CharField(

@@ -2064,9 +2064,7 @@ class LicenseAction(TimeStampedModel):
         db_constraint=False,
         related_name='license_actions',
     )
-    enterprise_customer_uuid = models.UUIDField(
-        db_index=True,
-    )
+    enterprise_customer_uuid = models.UUIDField()
     action_type = models.CharField(
         max_length=64,
         choices=LicenseActionType.CHOICES,
@@ -2130,24 +2128,31 @@ class LicenseAction(TimeStampedModel):
         """
         errors = {}
 
-        if self.license_id and self.subscription_plan_id:
-            if self.license.subscription_plan_id != self.subscription_plan_id:
-                errors['subscription_plan'] = (
-                    'subscription_plan must match license.subscription_plan.'
-                )
+        try:
+            if self.license_id and self.subscription_plan_id:
+                if self.license.subscription_plan_id != self.subscription_plan_id:
+                    errors['subscription_plan'] = (
+                        'subscription_plan must match license.subscription_plan.'
+                    )
+        except (License.DoesNotExist, SubscriptionPlan.DoesNotExist):
+            pass
 
-        if self.license_id and self.enterprise_customer_uuid:
-            license_customer_uuid = self.license.subscription_plan.enterprise_customer_uuid
-            if license_customer_uuid != self.enterprise_customer_uuid:
-                errors['enterprise_customer_uuid'] = (
-                    'enterprise_customer_uuid must match license.enterprise_customer_uuid.'
-                )
+        try:
+            if self.license_id and self.enterprise_customer_uuid:
+                license_customer_uuid = self.license.subscription_plan.enterprise_customer_uuid
+                if license_customer_uuid != self.enterprise_customer_uuid:
+                    errors['enterprise_customer_uuid'] = (
+                        'enterprise_customer_uuid must match '
+                        'license.subscription_plan.enterprise_customer_uuid.'
+                    )
+        except (License.DoesNotExist, SubscriptionPlan.DoesNotExist):
+            pass
 
         if errors:
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
-        self.full_clean()
+        self.full_clean(exclude=['license', 'subscription_plan'])
         return super().save(*args, **kwargs)
 
     def __str__(self):

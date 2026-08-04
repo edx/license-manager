@@ -43,6 +43,9 @@ from license_manager.apps.subscriptions.constants import (
     REVOKED,
     SALESFORCE_ID_LENGTH,
     UNASSIGNED,
+    LicenseActionSource,
+    LicenseActionType,
+    LicenseActorType,
     LicenseTypesToRenew,
     NotificationChoices,
     SegmentEvents,
@@ -2032,3 +2035,129 @@ def dispatch_license_expiration_event(sender, **kwargs):  # pylint: disable=unus
     if subscription_plan_obj and update_fields and 'expiration_processed' in update_fields:
         expired_licenses = [lcs for lcs in subscription_plan_obj.licenses.all() if not lcs.renewed_to]
         track_license_changes(expired_licenses, SegmentEvents.LICENSE_EXPIRED)
+
+
+class LicenseAction(TimeStampedModel):
+    """
+    Audit log model for all actions performed on a License.
+    Mirrors LearnerContentAssignmentAction in enterprise-access.
+
+    .. pii: Stores learner email and LMS user ID for license audit history.
+    .. pii_types: id, email_address
+    .. pii_retirement: local_api
+    """
+
+    uuid = models.UUIDField(
+        primary_key=True,
+        default=uuid4,
+        editable=False,
+    )
+    license = models.ForeignKey(
+        License,
+        on_delete=models.DO_NOTHING,
+        db_constraint=False,
+        related_name='actions',
+    )
+    subscription_plan = models.ForeignKey(
+        SubscriptionPlan,
+        on_delete=models.DO_NOTHING,
+        db_constraint=False,
+        related_name='license_actions',
+    )
+    enterprise_customer_uuid = models.UUIDField()
+    action_type = models.CharField(
+        max_length=64,
+        choices=LicenseActionType.CHOICES,
+    )
+    actor_type = models.CharField(
+        max_length=32,
+        choices=LicenseActorType.CHOICES,
+    )
+    actor_lms_user_id = models.IntegerField(
+        null=True,
+        blank=True,
+    )
+    learner_lms_user_id = models.IntegerField(
+        null=True,
+        blank=True,
+    )
+    learner_email = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+    learner_external_key = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+    source = models.CharField(
+        max_length=64,
+        choices=LicenseActionSource.CHOICES,
+    )
+    correlation_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ['-created']
+        indexes = [
+            models.Index(
+                fields=['license', 'created'],
+                name='idx_licaction_license_created',
+            ),
+            models.Index(
+                fields=['enterprise_customer_uuid', 'created'],
+                name='idx_licaction_entcust_created',
+            ),
+            models.Index(
+                fields=['subscription_plan', 'created'],
+                name='idx_licaction_subplan_created',
+            ),
+        ]
+
+    def clean(self):
+        """
+        Validate denormalized identifiers against the linked License.
+        """
+        errors = {}
+
+        try:
+            if self.license_id and self.subscription_plan_id:
+                if self.license.subscription_plan_id != self.subscription_plan_id:
+                    errors['subscription_plan'] = (
+                        'subscription_plan must match license.subscription_plan.'
+                    )
+        except (License.DoesNotExist, SubscriptionPlan.DoesNotExist):
+            pass
+
+        try:
+            if self.license_id and self.enterprise_customer_uuid:
+                license_customer_uuid = self.license.subscription_plan.enterprise_customer_uuid
+                if license_customer_uuid != self.enterprise_customer_uuid:
+                    errors['enterprise_customer_uuid'] = (
+                        'enterprise_customer_uuid must match '
+                        'license.subscription_plan.enterprise_customer_uuid.'
+                    )
+        except (License.DoesNotExist, SubscriptionPlan.DoesNotExist):
+            pass
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean(exclude=['license', 'subscription_plan'])
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return (
+            f"LicenseAction [{self.action_type}] "
+            f"license={self.license_id} "
+            f"actor={self.actor_type}"
+        )

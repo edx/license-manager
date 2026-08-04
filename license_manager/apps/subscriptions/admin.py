@@ -9,7 +9,7 @@ from django.db import connection, transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
-from django.utils.safestring import mark_safe
+from django.utils.html import format_html, format_html_join
 from djangoql.admin import DjangoQLSearchMixin
 from pytz import UTC
 from simple_history.admin import SimpleHistoryAdmin
@@ -46,10 +46,11 @@ from license_manager.apps.subscriptions.models import (
 
 
 def get_related_object_link(admin_viewname, object_pk, object_str):
-    return mark_safe('<a href="{href}">{object_string}</a><br/>'.format(
-        href=reverse(admin_viewname, args=(object_pk,)),
-        object_string=object_str,
-    ))
+    return format_html(
+        '<a href="{}">{}</a><br/>',
+        reverse(admin_viewname, args=(object_pk,)),
+        object_str,
+    )
 
 
 def _bulk_delete_request_handler(request, queryset, model_name, table_name, delete_action_method):
@@ -631,7 +632,7 @@ class CustomerAgreementAdmin(SimpleHistoryAdmin):
                         '{}: {}'.format(subscription_plan.title, subscription_plan.uuid),
                     )
                 )
-        return mark_safe(' '.join(links))
+        return format_html_join(' ', '{}', ((link,) for link in links))
 
 
 @admin.register(SubscriptionPlanRenewal)

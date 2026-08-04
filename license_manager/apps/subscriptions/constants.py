@@ -157,3 +157,55 @@ EXPIRED_LICENSE_UNLINKED = 'edx.server.license-manager.expired.license.unlinked'
 # Patterns used to serialize date/time to be machine-readable by Braze.
 BRAZE_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 BRAZE_DATE_FORMAT = "%b %d, %Y"
+
+
+# LicenseAction audit model constants (ENT-12031)
+
+class LicenseActionType:
+    ASSIGNED = 'assigned'
+    ACTIVATED = 'activated'
+    REVOKED = 'revoked'
+    RENEWED = 'renewed'
+    EXPIRED = 'expired'
+    DELETED = 'deleted'
+    SNAPSHOT_REVERT = 'snapshot_revert'
+    PLAN_MAINTENANCE = 'plan_maintenance'
+
+    CHOICES = (
+        (ASSIGNED, 'Assigned'),
+        (ACTIVATED, 'Activated'),
+        (REVOKED, 'Revoked'),
+        (RENEWED, 'Renewed'),
+        (EXPIRED, 'Expired'),
+        (DELETED, 'Deleted'),
+        (SNAPSHOT_REVERT, 'Snapshot Revert'),
+        (PLAN_MAINTENANCE, 'Plan Maintenance'),
+    )
+
+
+class LicenseActorType:
+    ADMIN = 'admin'
+    LEARNER = 'learner'
+    SYSTEM = 'system'
+
+    CHOICES = (
+        (ADMIN, 'Admin'),
+        (LEARNER, 'Learner'),
+        (SYSTEM, 'System'),
+    )
+
+
+class LicenseActionSource:
+    ADMIN_UI = 'admin_ui'
+    ADMIN_API_BULK = 'admin_api_bulk'
+    API = 'api'
+    CELERY_TASK = 'celery_task'
+    RENEWAL_JOB = 'renewal_job'
+
+    CHOICES = (
+        (ADMIN_UI, 'Admin UI'),
+        (ADMIN_API_BULK, 'Admin API Bulk'),
+        (API, 'API'),
+        (CELERY_TASK, 'Celery Task'),
+        (RENEWAL_JOB, 'Renewal Job'),
+    )

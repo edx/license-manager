@@ -1774,6 +1774,7 @@ class LicenseViewSetActionTests(LicenseViewSetActionMixin, TestCase):
         for action in assign_actions:
             assert action.metadata['batch_size'] == 2
             assert action.metadata['requested_email_count'] == 2
+            assert action.learner_external_key is None
             assert action.metadata['learner_external_key'] is None
 
     @mock.patch('license_manager.apps.api.v1.views.logger.exception')
@@ -1859,6 +1860,14 @@ class LicenseViewSetActionTests(LicenseViewSetActionMixin, TestCase):
             else:
                 with self.assertRaises(ObjectDoesNotExist):
                     SubscriptionLicenseSource.objects.get(license=assigned_license)
+
+            assign_action = LicenseAction.objects.get(
+                license=assigned_license,
+                action_type=constants.LicenseActionType.ASSIGNED,
+            )
+            expected_external_key = salesforce_id.strip() if salesforce_id else None
+            assert assign_action.learner_external_key == expected_external_key
+            assert assign_action.metadata['learner_external_key'] == expected_external_key
 
     @ddt.data(True, False)
     def test_assign_with_less_salesforce_ids(self, use_superuser):
@@ -2752,6 +2761,7 @@ class LicenseViewSetRevokeActionTests(LicenseViewSetActionMixin, TestCase):
         assert call_args.args == (str(self.subscription_plan.uuid),)
         assert call_args.kwargs['actor_lms_user_id'] == self.super_user.id
         assert call_args.kwargs['actor_type'] == constants.LicenseActorType.ADMIN
+        assert call_args.kwargs['source'] == constants.LicenseActionSource.ADMIN_API_BULK
         assert call_args.kwargs['correlation_id']
 
     @ddt.data(

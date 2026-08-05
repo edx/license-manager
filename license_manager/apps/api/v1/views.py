@@ -1190,13 +1190,16 @@ class LicenseAdminViewSet(BaseLicenseViewSet):
                             actor_lms_user_id=actor_lms_user_id,
                             learner_lms_user_id=_license.lms_user_id,
                             learner_email=_license.user_email,
+                            learner_external_key=(
+                                (emails_and_sfids.get(_license.user_email) or None) if emails_and_sfids else None
+                            ),
                             source=constants.LicenseActionSource.ADMIN_API_BULK,
                             correlation_id=correlation_id,
                             metadata={
                                 'batch_size': len(assigned_licenses),
                                 'requested_email_count': len(user_emails),
                                 'learner_external_key': (
-                                    emails_and_sfids.get(_license.user_email) if emails_and_sfids else None
+                                    (emails_and_sfids.get(_license.user_email) or None) if emails_and_sfids else None
                                 ),
                             },
                         ) for _license in assigned_licenses
@@ -1571,6 +1574,7 @@ class LicenseAdminViewSet(BaseLicenseViewSet):
             subscription_uuid,
             actor_lms_user_id=request.user.id,
             actor_type=constants.LicenseActorType.ADMIN,
+            source=constants.LicenseActionSource.ADMIN_API_BULK,
             correlation_id=str(uuid4()),
         )
         return Response(status=status.HTTP_204_NO_CONTENT)

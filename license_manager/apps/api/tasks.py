@@ -565,6 +565,8 @@ def revoke_all_licenses_task(
     actor_lms_user_id=None,
     actor_type=LicenseActorType.SYSTEM,
     correlation_id=None,
+    source=LicenseActionSource.CELERY_TASK,
+    **_ignored_kwargs,
 ):
     """
     Revokes all licenses associated with a subscription plan.
@@ -594,6 +596,7 @@ def revoke_all_licenses_task(
             **result,
             actor_lms_user_id=actor_lms_user_id,
             actor_type=actor_type,
+            source=source,
             correlation_id=correlation_id,
         )
 

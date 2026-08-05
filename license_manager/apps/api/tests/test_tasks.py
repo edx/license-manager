@@ -695,6 +695,7 @@ class RevokeAllLicensesTaskTests(TestCase):
         for post_revoke_call in mock_execute_post_revocation_tasks.call_args_list:
             assert post_revoke_call.kwargs['actor_lms_user_id'] is None
             assert post_revoke_call.kwargs['actor_type'] == constants.LicenseActorType.SYSTEM
+            assert post_revoke_call.kwargs['source'] == constants.LicenseActionSource.CELERY_TASK
             assert post_revoke_call.kwargs['correlation_id'] is None
 
     @mock.patch('license_manager.apps.api.tasks.execute_post_revocation_tasks')
@@ -709,6 +710,7 @@ class RevokeAllLicensesTaskTests(TestCase):
             self.subscription_plan.uuid,
             actor_lms_user_id=42,
             actor_type=constants.LicenseActorType.ADMIN,
+            source=constants.LicenseActionSource.ADMIN_API_BULK,
             correlation_id=correlation_id,
         )
 
@@ -716,6 +718,7 @@ class RevokeAllLicensesTaskTests(TestCase):
         for post_revoke_call in mock_execute_post_revocation_tasks.call_args_list:
             assert post_revoke_call.kwargs['actor_lms_user_id'] == 42
             assert post_revoke_call.kwargs['actor_type'] == constants.LicenseActorType.ADMIN
+            assert post_revoke_call.kwargs['source'] == constants.LicenseActionSource.ADMIN_API_BULK
             assert post_revoke_call.kwargs['correlation_id'] == correlation_id
 
     @mock.patch('license_manager.apps.api.tasks.execute_post_revocation_tasks')

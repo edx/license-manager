@@ -46,11 +46,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/test.txt
-boto3==1.43.55
+boto3==1.43.68
     # via
     #   -r requirements/test.txt
     #   django-ses
-botocore==1.43.55
+botocore==1.43.68
     # via
     #   -r requirements/test.txt
     #   boto3
@@ -64,7 +64,7 @@ certifi==2026.7.22
     # via
     #   -r requirements/test.txt
     #   requests
-cffi==2.1.0
+cffi==2.1.1
     # via
     #   -r requirements/test.txt
     #   cryptography
@@ -105,11 +105,11 @@ code-annotations==3.0.0
     #   -r requirements/test.txt
     #   edx-lint
     #   edx-toggles
-coverage[toml]==7.15.2
+coverage[toml]==7.15.4
     # via
     #   -r requirements/test.txt
     #   pytest-cov
-cryptography==49.0.0
+cryptography==50.0.0
     # via
     #   -r requirements/test.txt
     #   pyjwt
@@ -125,7 +125,7 @@ dill==0.4.1
     # via
     #   -r requirements/test.txt
     #   pylint
-django==5.2.16
+django==5.2.17
     # via
     #   -c requirements/common_constraints.txt
     #   -r requirements/test.txt
@@ -192,7 +192,7 @@ django-waffle==5.0.0
     #   edx-toggles
 djangoql==0.19.1
     # via -r requirements/test.txt
-djangorestframework==3.17.1
+djangorestframework==3.18.0
     # via
     #   -r requirements/test.txt
     #   djangorestframework-csv
@@ -219,7 +219,7 @@ drf-jwt==1.19.2
     # via
     #   -r requirements/test.txt
     #   edx-drf-extensions
-drf-nested-routers==0.95.0
+drf-nested-routers==0.95.3
     # via -r requirements/test.txt
 drf-spectacular==0.30.0
     # via -r requirements/test.txt
@@ -258,7 +258,7 @@ edx-toggles==6.0.0
     #   edx-auth-backends
 factory-boy==3.3.3
     # via -r requirements/test.txt
-faker==40.35.0
+faker==40.36.0
     # via
     #   -r requirements/test.txt
     #   factory-boy
@@ -330,13 +330,13 @@ oauthlib==3.3.1
     #   -r requirements/test.txt
     #   requests-oauthlib
     #   social-auth-core
-packaging==26.2
+packaging==26.3
     # via
     #   -r requirements/test.txt
     #   kombu
     #   pytest
     #   sphinx
-platformdirs==4.11.0
+platformdirs==4.11.2
     # via
     #   -r requirements/test.txt
     #   pylint
@@ -349,7 +349,7 @@ ply==3.11
     # via
     #   -r requirements/test.txt
     #   djangoql
-prompt-toolkit==3.0.52
+prompt-toolkit==3.0.53
     # via
     #   -r requirements/test.txt
     #   click-repl
@@ -380,7 +380,7 @@ pyjwt[crypto]==2.13.0
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   social-auth-core
-pylint==4.0.6
+pylint==4.0.7
     # via
     #   -r requirements/test.txt
     #   edx-lint
@@ -415,7 +415,7 @@ pytest==9.1.1
     #   pytest-django
 pytest-cov==7.1.0
     # via -r requirements/test.txt
-pytest-django==4.12.0
+pytest-django==4.14.0
     # via -r requirements/test.txt
 python-dateutil==2.9.0.post0
     # via
@@ -432,7 +432,7 @@ python3-openid==3.2.0
     # via
     #   -r requirements/test.txt
     #   social-auth-core
-pytz==2026.2
+pytz==2026.3.post1
     # via -r requirements/test.txt
 pyyaml==6.0.3
     # via
@@ -441,7 +441,7 @@ pyyaml==6.0.3
     #   drf-spectacular
 readme-renderer==45.0
     # via -r requirements/doc.in
-redis==8.0.1
+redis==8.1.0
     # via -r requirements/test.txt
 referencing==0.37.0
     # via
@@ -506,7 +506,7 @@ social-auth-core==4.9.1
     #   -r requirements/test.txt
     #   edx-auth-backends
     #   social-auth-app-django
-soupsieve==2.9.1
+soupsieve==2.9.2
     # via beautifulsoup4
 sphinx==9.1.0
     # via

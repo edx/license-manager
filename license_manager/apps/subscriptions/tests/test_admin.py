@@ -9,15 +9,22 @@ from django.test import RequestFactory, TestCase
 from license_manager.apps.subscriptions.admin import (
     CustomerAgreementAdmin,
     SubscriptionPlanAdmin,
+    SubscriptionPlanRenewalAdmin,
+)
+from license_manager.apps.subscriptions.constants import (
+    LicenseActionSource,
+    LicenseActorType,
 )
 from license_manager.apps.subscriptions.models import (
     CustomerAgreement,
     SubscriptionPlan,
+    SubscriptionPlanRenewal,
 )
 from license_manager.apps.subscriptions.tests.factories import (
     CustomerAgreementFactory,
     LicenseFactory,
     SubscriptionPlanFactory,
+    SubscriptionPlanRenewalFactory,
     UserFactory,
 )
 from license_manager.apps.subscriptions.tests.utils import (
@@ -173,3 +180,33 @@ def test_delete_all_revoked_licenses(mock_add_message):
     mock_add_message.assert_called_once_with(
         request, messages.SUCCESS, f"Successfully deleted revoked licenses for plans ['{subscription_plan.title}'].",
     )
+
+
+@pytest.mark.django_db
+@mock.patch('license_manager.apps.subscriptions.admin.renew_subscription')
+def test_process_renewal_action_passes_audit_context(mock_renew_subscription):
+    """
+    Verify the renewal admin action passes actor/source/correlation context.
+    """
+    renewal_admin = SubscriptionPlanRenewalAdmin(SubscriptionPlanRenewal, AdminSite())
+    request = RequestFactory()
+    request.user = UserFactory()
+
+    renewal = SubscriptionPlanRenewalFactory.create(
+        prior_subscription_plan=SubscriptionPlanFactory.create(),
+    )
+
+    renewal_admin.process_renewal(
+        request,
+        SubscriptionPlanRenewal.objects.filter(id=renewal.id),
+    )
+
+    mock_renew_subscription.assert_called_once()
+    called_renewal, = mock_renew_subscription.call_args.args
+    assert called_renewal.id == renewal.id
+
+    kwargs = mock_renew_subscription.call_args.kwargs
+    assert kwargs['actor_type'] == LicenseActorType.ADMIN
+    assert kwargs['actor_lms_user_id'] == request.user.id
+    assert kwargs['source'] == LicenseActionSource.ADMIN_UI
+    assert kwargs['correlation_id']

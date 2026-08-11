@@ -7,6 +7,7 @@ from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase
 
+from license_manager.apps.subscriptions import constants
 from license_manager.apps.subscriptions.api import RenewalProcessingError
 from license_manager.apps.subscriptions.models import (
     License,
@@ -93,6 +94,15 @@ class ProcessRenewalsCommandTests(TestCase):
             assert "Processed 2 renewals for subscriptions with uuids: ['{}', '{}']".format(
                 subscription_plan_1.uuid, subscription_plan_2.uuid) in log.output[1]
 
+            first_call_kwargs = mock_renew_subscription.call_args_list[0].kwargs
+            second_call_kwargs = mock_renew_subscription.call_args_list[1].kwargs
+            assert first_call_kwargs['is_auto_renewed'] is True
+            assert first_call_kwargs['actor_type'] == constants.LicenseActorType.SYSTEM
+            assert first_call_kwargs['actor_lms_user_id'] is None
+            assert first_call_kwargs['source'] == constants.LicenseActionSource.RENEWAL_JOB
+            assert first_call_kwargs['correlation_id']
+            assert second_call_kwargs['correlation_id'] == first_call_kwargs['correlation_id']
+
     @mock.patch('license_manager.apps.subscriptions.management.commands.process_renewals.renew_subscription')
     def test_renew_subscription_exception(self, mock_renew_subscription):
         """
@@ -112,3 +122,9 @@ class ProcessRenewalsCommandTests(TestCase):
                 subscription_plan_1.uuid, subscription_plan_2.uuid) in log.output[0]
             assert "Could not automatically process renewal with id: {}".format(subscription_plan_1.renewal.id) in log.output[1]
             assert "Processed 1 renewals for subscriptions with uuids: ['{}']".format(subscription_plan_2.uuid) in log.output[2]
+
+            first_call_kwargs = mock_renew_subscription.call_args_list[0].kwargs
+            second_call_kwargs = mock_renew_subscription.call_args_list[1].kwargs
+            assert first_call_kwargs['source'] == constants.LicenseActionSource.RENEWAL_JOB
+            assert first_call_kwargs['actor_type'] == constants.LicenseActorType.SYSTEM
+            assert second_call_kwargs['correlation_id'] == first_call_kwargs['correlation_id']

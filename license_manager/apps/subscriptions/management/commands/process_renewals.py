@@ -1,5 +1,6 @@
 import logging
 from datetime import timedelta
+from uuid import uuid4
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -7,6 +8,10 @@ from django.core.management.base import BaseCommand
 from license_manager.apps.subscriptions.api import (
     RenewalProcessingError,
     renew_subscription,
+)
+from license_manager.apps.subscriptions.constants import (
+    LicenseActionSource,
+    LicenseActorType,
 )
 from license_manager.apps.subscriptions.models import SubscriptionPlanRenewal
 from license_manager.apps.subscriptions.utils import localized_utcnow
@@ -58,10 +63,18 @@ class Command(BaseCommand):
                 len(subscription_uuids), subscription_uuids))
 
             renewed_subscription_uuids = []
+            correlation_id = str(uuid4())
             for renewal in renewals_to_be_processed:
                 subscription_uuid = str(renewal.prior_subscription_plan.uuid)
                 try:
-                    renew_subscription(renewal, is_auto_renewed=True)
+                    renew_subscription(
+                        renewal,
+                        is_auto_renewed=True,
+                        actor_type=LicenseActorType.SYSTEM,
+                        actor_lms_user_id=None,
+                        source=LicenseActionSource.RENEWAL_JOB,
+                        correlation_id=correlation_id,
+                    )
                     renewed_subscription_uuids.append(subscription_uuid)
                 except RenewalProcessingError:
                     logger.error('Could not automatically process renewal with id: {}'.format(

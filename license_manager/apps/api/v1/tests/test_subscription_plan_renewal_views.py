@@ -2,6 +2,7 @@
 Unit tests for SubscriptionPlanRenewalProvisioningAdminViewset.
 """
 from datetime import timedelta
+from unittest import mock
 from uuid import UUID, uuid4
 
 import ddt
@@ -735,6 +736,33 @@ class SubscriptionPlanRenewalProvisioningAdminViewsetTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertIn('Cannot renew for fewer than the number of original activated licenses', response.data['error'])
+
+    @mock.patch('license_manager.apps.api.v1.views.renew_subscription')
+    def test_process_renewal_passes_audit_context(self, mock_renew_subscription):
+        """
+        Verify the process endpoint passes actor/source/correlation to renew_subscription.
+        """
+        self._setup_request_jwt(user=self.user)
+
+        renewal = SubscriptionPlanRenewalFactory.create(
+            prior_subscription_plan=self.prior_plan,
+            number_of_licenses=1,
+            processed=False,
+        )
+
+        response = self.client.post(
+            self._get_process_url(renewal.id),
+            format='json'
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        mock_renew_subscription.assert_called_once()
+        _, kwargs = mock_renew_subscription.call_args
+        self.assertEqual(kwargs['is_auto_renewed'], False)
+        self.assertEqual(kwargs['actor_type'], constants.LicenseActorType.ADMIN)
+        self.assertEqual(kwargs['actor_lms_user_id'], self.user.id)
+        self.assertEqual(kwargs['source'], constants.LicenseActionSource.API)
+        self.assertTrue(kwargs['correlation_id'])
 
     def _get_process_url(self, renewal_id):
         """

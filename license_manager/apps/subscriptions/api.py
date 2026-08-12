@@ -204,29 +204,32 @@ def _renew_all_licenses(
     )
 
     try:
-        LicenseAction.objects.bulk_create([
-            LicenseAction(
-                license=future_license,
-                subscription_plan=future_plan,
-                enterprise_customer_uuid=future_plan.enterprise_customer_uuid,
-                action_type=LicenseActionType.RENEWED,
-                actor_type=actor_type,
-                actor_lms_user_id=actor_lms_user_id,
-                learner_lms_user_id=future_license.lms_user_id,
-                learner_email=future_license.user_email,
-                source=source,
-                correlation_id=correlation_id,
-                metadata={
-                    'renewal_id': subscription_plan_renewal.id,
-                    'prior_subscription_plan_uuid': str(subscription_plan_renewal.prior_subscription_plan.uuid),
-                    'renewed_subscription_plan_uuid': str(future_plan.uuid),
-                    'original_license_uuid': str(original_license.uuid),
-                    'original_status': original_license.status,
-                    'is_auto_renewed': is_auto_renewed,
-                },
-            )
-            for original_license, future_license in renewed_license_pairs
-        ])
+        with transaction.atomic():
+            LicenseAction.objects.bulk_create([
+                LicenseAction(
+                    license=future_license,
+                    subscription_plan=future_plan,
+                    enterprise_customer_uuid=future_plan.enterprise_customer_uuid,
+                    action_type=LicenseActionType.RENEWED,
+                    actor_type=actor_type,
+                    actor_lms_user_id=actor_lms_user_id,
+                    learner_lms_user_id=future_license.lms_user_id,
+                    learner_email=future_license.user_email,
+                    source=source,
+                    correlation_id=correlation_id,
+                    metadata={
+                        'renewal_id': subscription_plan_renewal.id,
+                        'prior_subscription_plan_uuid': str(
+                            subscription_plan_renewal.prior_subscription_plan.uuid
+                        ),
+                        'renewed_subscription_plan_uuid': str(future_plan.uuid),
+                        'original_license_uuid': str(original_license.uuid),
+                        'original_status': original_license.status,
+                        'is_auto_renewed': is_auto_renewed,
+                    },
+                )
+                for original_license, future_license in renewed_license_pairs
+            ])
     except Exception:  # pylint: disable=broad-except
         logger.exception(
             'Failed to write renewed LicenseAction rows for renewal %s; continuing renewal flow.',

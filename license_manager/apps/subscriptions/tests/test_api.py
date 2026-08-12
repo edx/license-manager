@@ -4,6 +4,8 @@ from unittest import mock
 
 import ddt
 import freezegun
+from django.db import IntegrityError
+from django.db.models.query import QuerySet
 from django.test import TestCase
 from requests.exceptions import HTTPError
 
@@ -333,8 +335,28 @@ class RenewalProcessingTests(TestCase):
             self.assertFalse(action.metadata['is_auto_renewed'])
 
     @mock.patch('license_manager.apps.subscriptions.api.logger.exception')
-    @mock.patch('license_manager.apps.subscriptions.api.LicenseAction.objects.bulk_create')
-    def test_renewal_audit_failure_does_not_fail_processing(self, mock_bulk_create, mock_logger_exception):
+    def test_renewal_audit_failure_does_not_fail_processing(self, mock_logger_exception):
+        """
+        A genuine ``IntegrityError`` (not a mocked ``Exception``) raised while
+        writing the audit ``LicenseAction`` rows must not roll back or blow up
+        the renewal itself. ``LicenseAction.objects.bulk_create()`` performs
+        its insert inside its own non-savepoint ``transaction.atomic()``
+        block, so on failure it marks the connection for rollback regardless
+        of whether the caller catches the exception; only an inner *savepoint*
+        atomic() around the audit write can contain that. Patching
+        ``bulk_create`` itself (as a prior version of this test did) would
+        bypass that internal atomic block entirely and pass even without the
+        fix, so instead we force the underlying insert (``_batched_insert``)
+        to raise for ``LicenseAction`` only, keeping ``bulk_create()``'s real
+        transaction handling intact and leaving other models' inserts alone.
+        """
+        original_batched_insert = QuerySet._batched_insert  # pylint: disable=protected-access
+
+        def fake_batched_insert(self, objs, fields, batch_size, **kwargs):
+            if self.model is LicenseAction:
+                raise IntegrityError('duplicate key value violates unique constraint')
+            return original_batched_insert(self, objs, fields, batch_size, **kwargs)
+
         prior_plan = SubscriptionPlanFactory()
         LicenseFactory.create(
             subscription_plan=prior_plan,
@@ -347,13 +369,22 @@ class RenewalProcessingTests(TestCase):
             number_of_licenses=1,
             license_types_to_copy=constants.LicenseTypesToRenew.ASSIGNED_AND_ACTIVATED,
         )
-        mock_bulk_create.side_effect = Exception('audit write failed')
 
-        api.renew_subscription(renewal)
+        with mock.patch.object(QuerySet, '_batched_insert', new=fake_batched_insert):
+            api.renew_subscription(renewal)
 
         renewal.refresh_from_db()
         self.assertTrue(renewal.processed)
         self.assertIsNotNone(renewal.renewed_subscription_plan)
+
+        # The renewed license was still fully processed despite the audit failure.
+        future_license = renewal.renewed_subscription_plan.licenses.get()
+        self.assertEqual(future_license.status, constants.ACTIVATED)
+        self.assertEqual(future_license.user_email, 'activated_user@example.com')
+
+        # The failed audit write left no partial LicenseAction rows behind.
+        self.assertFalse(LicenseAction.objects.filter(subscription_plan=renewal.renewed_subscription_plan).exists())
+
         mock_logger_exception.assert_called_once()
 
 

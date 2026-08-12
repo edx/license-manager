@@ -710,7 +710,7 @@ class RevokeAllLicensesTaskTests(TestCase):
             self.subscription_plan.uuid,
             actor_lms_user_id=42,
             actor_type=constants.LicenseActorType.ADMIN,
-            source=constants.LicenseActionSource.ADMIN_API_BULK,
+            source=constants.LicenseActionSource.ADMIN_API,
             correlation_id=correlation_id,
         )
 
@@ -718,8 +718,32 @@ class RevokeAllLicensesTaskTests(TestCase):
         for post_revoke_call in mock_execute_post_revocation_tasks.call_args_list:
             assert post_revoke_call.kwargs['actor_lms_user_id'] == 42
             assert post_revoke_call.kwargs['actor_type'] == constants.LicenseActorType.ADMIN
-            assert post_revoke_call.kwargs['source'] == constants.LicenseActionSource.ADMIN_API_BULK
+            assert post_revoke_call.kwargs['source'] == constants.LicenseActionSource.ADMIN_API
             assert post_revoke_call.kwargs['correlation_id'] == correlation_id
+
+    @mock.patch('license_manager.apps.api.tasks.logger.warning')
+    @mock.patch('license_manager.apps.api.tasks.execute_post_revocation_tasks')
+    @mock.patch('license_manager.apps.subscriptions.api.revoke_license')
+    def test_revoke_all_licenses_task_warns_on_unexpected_kwargs(
+        self,
+        mock_revoke_license,
+        mock_execute_post_revocation_tasks,
+        mock_logger_warning,
+    ):
+        """
+        Verify unexpected kwargs are warned on but still ignored for compatibility.
+        """
+        mock_revoke_license.side_effect = [
+            {'revoked_license': self.activated_license, 'original_status': constants.ACTIVATED},
+            {'revoked_license': self.assigned_license, 'original_status': constants.ASSIGNED},
+        ]
+
+        tasks.revoke_all_licenses_task(self.subscription_plan.uuid, correlationid='typoed')
+
+        mock_logger_warning.assert_called_once()
+        assert 'unexpected kwargs' in mock_logger_warning.call_args.args[0]
+        assert mock_logger_warning.call_args.args[1] == ['correlationid']
+        assert mock_execute_post_revocation_tasks.call_count == 2
 
     @mock.patch('license_manager.apps.api.tasks.execute_post_revocation_tasks')
     @mock.patch('license_manager.apps.subscriptions.api.revoke_license')

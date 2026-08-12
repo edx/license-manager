@@ -1574,7 +1574,7 @@ class LicenseAdminViewSet(BaseLicenseViewSet):
             subscription_uuid,
             actor_lms_user_id=request.user.id,
             actor_type=constants.LicenseActorType.ADMIN,
-            source=constants.LicenseActionSource.ADMIN_API_BULK,
+            source=constants.LicenseActionSource.ADMIN_API,
             correlation_id=str(uuid4()),
         )
         return Response(status=status.HTTP_204_NO_CONTENT)

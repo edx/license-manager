@@ -2761,7 +2761,7 @@ class LicenseViewSetRevokeActionTests(LicenseViewSetActionMixin, TestCase):
         assert call_args.args == (str(self.subscription_plan.uuid),)
         assert call_args.kwargs['actor_lms_user_id'] == self.super_user.id
         assert call_args.kwargs['actor_type'] == constants.LicenseActorType.ADMIN
-        assert call_args.kwargs['source'] == constants.LicenseActionSource.ADMIN_API_BULK
+        assert call_args.kwargs['source'] == constants.LicenseActionSource.ADMIN_API
         assert call_args.kwargs['correlation_id']
 
     @ddt.data(

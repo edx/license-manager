@@ -574,6 +574,12 @@ def revoke_all_licenses_task(
     Arguments:
         subscription_uuid (str): UUID (string representation) of the subscription to revoke all licenses for.
     """
+    if _ignored_kwargs:
+        logger.warning(
+            'revoke_all_licenses_task received unexpected kwargs and will ignore them for compatibility: %s',
+            sorted(_ignored_kwargs.keys()),
+        )
+
     subscription_plan = SubscriptionPlan.objects.get(uuid=subscription_uuid)
 
     with transaction.atomic():

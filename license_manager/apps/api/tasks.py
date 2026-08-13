@@ -419,8 +419,8 @@ def execute_post_revocation_tasks(
         - Send email notification to ECS if the Subscription Plan has reached its revocation cap.
     """
     action_metadata = {
-        'original_status': original_status,
         **(metadata or {}),
+        'original_status': original_status,
     }
 
     # Guard against duplicate audit rows on async retries by reusing a deterministic idempotency key.
@@ -440,6 +440,7 @@ def execute_post_revocation_tasks(
                 revoked_license.uuid,
                 idempotency_key,
             )
+            return
         else:
             LicenseAction.objects.create(
                 license=revoked_license,

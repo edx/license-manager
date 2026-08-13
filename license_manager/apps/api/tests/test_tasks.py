@@ -812,14 +812,20 @@ class RevokeAllLicensesTaskTests(TestCase):
         assert action.source == constants.LicenseActionSource.CELERY_TASK
         assert action.metadata['original_status'] == original_status
 
+    @mock.patch('license_manager.apps.api.tasks.send_revocation_cap_notification_email_task.delay')
     @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
     def test_execute_post_revocation_tasks_idempotent_for_same_correlation(
         self,
         mock_revoke_enrollments_delay,
+        mock_cap_email_delay,
     ):
-        subscription_plan = SubscriptionPlanFactory.create()
+        subscription_plan = SubscriptionPlanFactory.create(
+            is_revocation_cap_enabled=True,
+            num_revocations_applied=0,
+            revoke_max_percentage=100,
+        )
         original_license = LicenseFactory.create(
-            status=constants.ASSIGNED,
+            status=constants.ACTIVATED,
             subscription_plan=subscription_plan,
             lms_user_id=123,
         )
@@ -833,7 +839,33 @@ class RevokeAllLicensesTaskTests(TestCase):
         assert actions.first().metadata['idempotency_key'] == (
             f'corr-123:{original_license.uuid}:{constants.LicenseActionType.REVOKED}'
         )
-        mock_revoke_enrollments_delay.assert_not_called()
+        # Both downstream tasks should have fired exactly once, from the first
+        # (non-duplicate) invocation; the second, duplicate invocation must not
+        # re-trigger enrollment revocation or the cap-reached email.
+        mock_revoke_enrollments_delay.assert_called_once()
+        mock_cap_email_delay.assert_called_once()
+
+    @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
+    def test_execute_post_revocation_tasks_metadata_cannot_override_original_status(
+        self,
+        mock_revoke_enrollments_delay,
+    ):
+        subscription_plan = SubscriptionPlanFactory.create()
+        original_license = LicenseFactory.create(
+            status=constants.ACTIVATED,
+            subscription_plan=subscription_plan,
+            lms_user_id=123,
+        )
+
+        revocation_result = revoke_license(original_license)
+        tasks.execute_post_revocation_tasks(
+            **revocation_result,
+            metadata={'original_status': constants.ASSIGNED},
+        )
+
+        action = LicenseAction.objects.get(license=original_license)
+        assert action.metadata['original_status'] == constants.ACTIVATED
+        mock_revoke_enrollments_delay.assert_called_once()
 
     @mock.patch('license_manager.apps.api.tasks.logger.exception')
     @mock.patch('license_manager.apps.api.tasks.LicenseAction.objects.create')

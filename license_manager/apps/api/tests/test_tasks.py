@@ -33,6 +33,7 @@ from license_manager.apps.subscriptions.exceptions import LicenseRevocationError
 from license_manager.apps.subscriptions.models import (
     CustomerAgreement,
     License,
+    LicenseAction,
     Notification,
     SubscriptionPlan,
 )
@@ -691,6 +692,59 @@ class RevokeAllLicensesTaskTests(TestCase):
         mock_revoke_license.assert_has_calls(expected_calls, any_order=True)
         assert mock_execute_post_revocation_tasks.call_count == 2
 
+        for post_revoke_call in mock_execute_post_revocation_tasks.call_args_list:
+            assert post_revoke_call.kwargs['actor_lms_user_id'] is None
+            assert post_revoke_call.kwargs['actor_type'] == constants.LicenseActorType.SYSTEM
+            assert post_revoke_call.kwargs['source'] == constants.LicenseActionSource.CELERY_TASK
+            assert post_revoke_call.kwargs['correlation_id'] is None
+
+    @mock.patch('license_manager.apps.api.tasks.execute_post_revocation_tasks')
+    @mock.patch('license_manager.apps.subscriptions.api.revoke_license')
+    def test_revoke_all_licenses_task_with_actor_context(self, mock_revoke_license, mock_execute_post_revocation_tasks):
+        """
+        Verify revoke-all propagates actor/correlation context to post-revocation tasks.
+        """
+        correlation_id = 'corr-123'
+
+        tasks.revoke_all_licenses_task(
+            self.subscription_plan.uuid,
+            actor_lms_user_id=42,
+            actor_type=constants.LicenseActorType.ADMIN,
+            source=constants.LicenseActionSource.ADMIN_API,
+            correlation_id=correlation_id,
+        )
+
+        assert mock_execute_post_revocation_tasks.call_count == 2
+        for post_revoke_call in mock_execute_post_revocation_tasks.call_args_list:
+            assert post_revoke_call.kwargs['actor_lms_user_id'] == 42
+            assert post_revoke_call.kwargs['actor_type'] == constants.LicenseActorType.ADMIN
+            assert post_revoke_call.kwargs['source'] == constants.LicenseActionSource.ADMIN_API
+            assert post_revoke_call.kwargs['correlation_id'] == correlation_id
+
+    @mock.patch('license_manager.apps.api.tasks.logger.warning')
+    @mock.patch('license_manager.apps.api.tasks.execute_post_revocation_tasks')
+    @mock.patch('license_manager.apps.subscriptions.api.revoke_license')
+    def test_revoke_all_licenses_task_warns_on_unexpected_kwargs(
+        self,
+        mock_revoke_license,
+        mock_execute_post_revocation_tasks,
+        mock_logger_warning,
+    ):
+        """
+        Verify unexpected kwargs are warned on but still ignored for compatibility.
+        """
+        mock_revoke_license.side_effect = [
+            {'revoked_license': self.activated_license, 'original_status': constants.ACTIVATED},
+            {'revoked_license': self.assigned_license, 'original_status': constants.ASSIGNED},
+        ]
+
+        tasks.revoke_all_licenses_task(self.subscription_plan.uuid, correlationid='typoed')
+
+        mock_logger_warning.assert_called_once()
+        assert 'unexpected kwargs' in mock_logger_warning.call_args.args[0]
+        assert mock_logger_warning.call_args.args[1] == ['correlationid']
+        assert mock_execute_post_revocation_tasks.call_count == 2
+
     @mock.patch('license_manager.apps.api.tasks.execute_post_revocation_tasks')
     @mock.patch('license_manager.apps.subscriptions.api.revoke_license')
     def test_revoke_all_licenses_task_error(self, mock_revoke_license, mock_execute_post_revocation_tasks):
@@ -751,6 +805,93 @@ class RevokeAllLicensesTaskTests(TestCase):
 
         self.assertEqual(mock_revoke_enrollments_delay.called, is_license_revoked)
         self.assertEqual(mock_cap_email_delay.called, revoke_limit_reached)
+
+        action = LicenseAction.objects.get(license=original_license)
+        assert action.action_type == constants.LicenseActionType.REVOKED
+        assert action.actor_type == constants.LicenseActorType.SYSTEM
+        assert action.source == constants.LicenseActionSource.CELERY_TASK
+        assert action.metadata['original_status'] == original_status
+
+    @mock.patch('license_manager.apps.api.tasks.send_revocation_cap_notification_email_task.delay')
+    @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
+    def test_execute_post_revocation_tasks_idempotent_for_same_correlation(
+        self,
+        mock_revoke_enrollments_delay,
+        mock_cap_email_delay,
+    ):
+        subscription_plan = SubscriptionPlanFactory.create(
+            is_revocation_cap_enabled=True,
+            num_revocations_applied=0,
+            revoke_max_percentage=100,
+        )
+        original_license = LicenseFactory.create(
+            status=constants.ACTIVATED,
+            subscription_plan=subscription_plan,
+            lms_user_id=123,
+        )
+
+        revocation_result = revoke_license(original_license)
+        tasks.execute_post_revocation_tasks(**revocation_result, correlation_id='corr-123')
+        tasks.execute_post_revocation_tasks(**revocation_result, correlation_id='corr-123')
+
+        actions = LicenseAction.objects.filter(license=original_license)
+        assert actions.count() == 1
+        assert actions.first().metadata['idempotency_key'] == (
+            f'corr-123:{original_license.uuid}:{constants.LicenseActionType.REVOKED}'
+        )
+        # Both downstream tasks should have fired exactly once, from the first
+        # (non-duplicate) invocation; the second, duplicate invocation must not
+        # re-trigger enrollment revocation or the cap-reached email.
+        mock_revoke_enrollments_delay.assert_called_once()
+        mock_cap_email_delay.assert_called_once()
+
+    @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
+    def test_execute_post_revocation_tasks_metadata_cannot_override_original_status(
+        self,
+        mock_revoke_enrollments_delay,
+    ):
+        subscription_plan = SubscriptionPlanFactory.create()
+        original_license = LicenseFactory.create(
+            status=constants.ACTIVATED,
+            subscription_plan=subscription_plan,
+            lms_user_id=123,
+        )
+
+        revocation_result = revoke_license(original_license)
+        tasks.execute_post_revocation_tasks(
+            **revocation_result,
+            metadata={'original_status': constants.ASSIGNED},
+        )
+
+        action = LicenseAction.objects.get(license=original_license)
+        assert action.metadata['original_status'] == constants.ACTIVATED
+        mock_revoke_enrollments_delay.assert_called_once()
+
+    @mock.patch('license_manager.apps.api.tasks.logger.exception')
+    @mock.patch('license_manager.apps.api.tasks.LicenseAction.objects.create')
+    @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
+    def test_execute_post_revocation_tasks_audit_failure_does_not_block_followup_tasks(
+        self,
+        mock_revoke_enrollments_delay,
+        mock_action_create,
+        mock_log_exception,
+    ):
+        subscription_plan = SubscriptionPlanFactory.create()
+        original_license = LicenseFactory.create(
+            status=constants.ACTIVATED,
+            subscription_plan=subscription_plan,
+            lms_user_id=123,
+        )
+        mock_action_create.side_effect = Exception('audit write failed')
+
+        revocation_result = revoke_license(original_license)
+        tasks.execute_post_revocation_tasks(**revocation_result, correlation_id='corr-456')
+
+        mock_revoke_enrollments_delay.assert_called_once_with(
+            user_id=123,
+            enterprise_id=str(subscription_plan.enterprise_customer_uuid),
+        )
+        mock_log_exception.assert_called_once()
 
 
 class EnterpriseEnrollmentLicenseSubsidyTaskTests(TestCase):

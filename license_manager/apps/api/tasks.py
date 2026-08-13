@@ -31,6 +31,9 @@ from license_manager.apps.subscriptions.constants import (
     REMINDER_EMAIL_BATCH_SIZE,
     REVOCABLE_LICENSE_STATUSES,
     TRACK_LICENSE_CHANGES_BATCH_SIZE,
+    LicenseActionSource,
+    LicenseActionType,
+    LicenseActorType,
     NotificationChoices,
 )
 from license_manager.apps.subscriptions.event_utils import (
@@ -40,6 +43,7 @@ from license_manager.apps.subscriptions.event_utils import (
 from license_manager.apps.subscriptions.models import (
     CustomerAgreement,
     License,
+    LicenseAction,
     Notification,
     SubscriptionPlan,
 )
@@ -398,7 +402,15 @@ def revoke_course_enrollments_for_user_task(user_id, enterprise_id):
         )
 
 
-def execute_post_revocation_tasks(revoked_license, original_status):
+def execute_post_revocation_tasks(
+    revoked_license,
+    original_status,
+    actor_lms_user_id=None,
+    actor_type=LicenseActorType.SYSTEM,
+    source=LicenseActionSource.CELERY_TASK,
+    correlation_id=None,
+    metadata=None,
+):
     """
     Executes a set of tasks after a license has been revoked.
 
@@ -406,6 +418,48 @@ def execute_post_revocation_tasks(revoked_license, original_status):
         - Revoke enrollments if the License has an original status of ACTIVATED.
         - Send email notification to ECS if the Subscription Plan has reached its revocation cap.
     """
+    action_metadata = {
+        **(metadata or {}),
+        'original_status': original_status,
+    }
+
+    # Guard against duplicate audit rows on async retries by reusing a deterministic idempotency key.
+    idempotency_key = action_metadata.get('idempotency_key')
+    if not idempotency_key and correlation_id:
+        idempotency_key = f'{correlation_id}:{revoked_license.uuid}:{LicenseActionType.REVOKED}'
+        action_metadata['idempotency_key'] = idempotency_key
+
+    try:
+        if idempotency_key and LicenseAction.objects.filter(
+            license=revoked_license,
+            action_type=LicenseActionType.REVOKED,
+            metadata__idempotency_key=idempotency_key,
+        ).exists():
+            logger.info(
+                'Skipping duplicate revoked LicenseAction for license %s with idempotency_key %s',
+                revoked_license.uuid,
+                idempotency_key,
+            )
+            return
+        else:
+            LicenseAction.objects.create(
+                license=revoked_license,
+                subscription_plan=revoked_license.subscription_plan,
+                enterprise_customer_uuid=revoked_license.subscription_plan.enterprise_customer_uuid,
+                action_type=LicenseActionType.REVOKED,
+                actor_type=actor_type,
+                actor_lms_user_id=actor_lms_user_id,
+                learner_lms_user_id=revoked_license.lms_user_id,
+                learner_email=revoked_license.user_email,
+                source=source,
+                correlation_id=correlation_id,
+                metadata=action_metadata,
+            )
+    except Exception:  # pylint: disable=broad-except
+        logger.exception(
+            'Failed to write revoked LicenseAction for license %s; continuing post-revocation tasks.',
+            revoked_license.uuid,
+        )
 
     # We should only need to revoke enrollments if the License has an original
     # status of ACTIVATED, pending users shouldn't have any enrollments.
@@ -507,13 +561,26 @@ def _aliased_recipient_object_from_email(user_email):
 
 
 @shared_task(base=LoggedTaskWithRetry)
-def revoke_all_licenses_task(subscription_uuid):
+def revoke_all_licenses_task(
+    subscription_uuid,
+    actor_lms_user_id=None,
+    actor_type=LicenseActorType.SYSTEM,
+    correlation_id=None,
+    source=LicenseActionSource.CELERY_TASK,
+    **_ignored_kwargs,
+):
     """
     Revokes all licenses associated with a subscription plan.
 
     Arguments:
         subscription_uuid (str): UUID (string representation) of the subscription to revoke all licenses for.
     """
+    if _ignored_kwargs:
+        logger.warning(
+            'revoke_all_licenses_task received unexpected kwargs and will ignore them for compatibility: %s',
+            sorted(_ignored_kwargs.keys()),
+        )
+
     subscription_plan = SubscriptionPlan.objects.get(uuid=subscription_uuid)
 
     with transaction.atomic():
@@ -532,7 +599,13 @@ def revoke_all_licenses_task(subscription_uuid):
                 raise
 
     for result in revocation_results:
-        execute_post_revocation_tasks(**result)
+        execute_post_revocation_tasks(
+            **result,
+            actor_lms_user_id=actor_lms_user_id,
+            actor_type=actor_type,
+            source=source,
+            correlation_id=correlation_id,
+        )
 
 
 def _send_bulk_enrollment_results_email(

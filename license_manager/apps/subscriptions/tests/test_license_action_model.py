@@ -162,11 +162,11 @@ class TestLicenseActionModel(TestCase):
         """
         self.assertEqual(len(LicenseActorType.CHOICES), 3)
 
-    def test_source_has_five_choices(self):
+    def test_source_has_six_choices(self):
         """
-        LicenseActionSource has exactly 5 choices.
+        LicenseActionSource has exactly 6 choices.
         """
-        self.assertEqual(len(LicenseActionSource.CHOICES), 5)
+        self.assertEqual(len(LicenseActionSource.CHOICES), 6)
 
     # =========================================================
     # FK relationship tests

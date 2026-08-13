@@ -197,6 +197,7 @@ class LicenseActorType:
 
 class LicenseActionSource:
     ADMIN_UI = 'admin_ui'
+    ADMIN_API = 'admin_api'
     ADMIN_API_BULK = 'admin_api_bulk'
     API = 'api'
     CELERY_TASK = 'celery_task'
@@ -204,6 +205,7 @@ class LicenseActionSource:
 
     CHOICES = (
         (ADMIN_UI, 'Admin UI'),
+        (ADMIN_API, 'Admin API'),
         (ADMIN_API_BULK, 'Admin API Bulk'),
         (API, 'API'),
         (CELERY_TASK, 'Celery Task'),

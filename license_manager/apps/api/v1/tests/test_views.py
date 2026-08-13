@@ -46,6 +46,7 @@ from license_manager.apps.subscriptions.exceptions import LicenseRevocationError
 from license_manager.apps.subscriptions.models import (
     CustomerAgreement,
     License,
+    LicenseAction,
     SubscriptionLicenseSource,
     SubscriptionsFeatureRole,
     SubscriptionsRoleAssignment,
@@ -1762,6 +1763,47 @@ class LicenseViewSetActionTests(LicenseViewSetActionMixin, TestCase):
             self.subscription_plan.customer_agreement.enterprise_customer_uuid
         )
 
+        assign_actions = LicenseAction.objects.filter(
+            subscription_plan=self.subscription_plan,
+            action_type=constants.LicenseActionType.ASSIGNED,
+        )
+        assert assign_actions.count() == 2
+        assert set(assign_actions.values_list('source', flat=True)) == {constants.LicenseActionSource.ADMIN_API_BULK}
+        assert set(assign_actions.values_list('actor_type', flat=True)) == {constants.LicenseActorType.ADMIN}
+        assert len(set(assign_actions.values_list('correlation_id', flat=True))) == 1
+        for action in assign_actions:
+            assert action.metadata['batch_size'] == 2
+            assert action.metadata['requested_email_count'] == 2
+            assert action.learner_external_key is None
+            assert action.metadata['learner_external_key'] is None
+
+    @mock.patch('license_manager.apps.api.v1.views.logger.exception')
+    @mock.patch('license_manager.apps.api.v1.views.LicenseAction.objects.bulk_create')
+    @mock.patch('license_manager.apps.api.v1.views.link_learners_to_enterprise_task.si')
+    @mock.patch('license_manager.apps.api.v1.views.send_assignment_email_task.si')
+    def test_assign_audit_failure_does_not_fail_assignment(
+        self,
+        mock_send_assignment_email_task,
+        mock_link_learners_task,
+        mock_bulk_create,
+        mock_log_exception,
+    ):
+        self._setup_request_jwt(user=self.user)
+        self._create_available_licenses()
+        mock_bulk_create.side_effect = Exception('audit write failed')
+
+        user_emails = ['bb8@mit.edu', self.test_email]
+        response = self.api_client.post(
+            self.assign_url,
+            {'greeting': self.greeting, 'closing': self.closing, 'user_emails': user_emails},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        self._assert_licenses_assigned(user_emails)
+        self.assertTrue(mock_send_assignment_email_task.called)
+        self.assertTrue(mock_link_learners_task.called)
+        mock_log_exception.assert_called_once()
+
     @mock.patch('license_manager.apps.api.v1.views.link_learners_to_enterprise_task.si')
     @mock.patch('license_manager.apps.api.v1.views.send_assignment_email_task.si')
     @mock.patch('license_manager.apps.api.utils.set_datadog_tags')
@@ -1818,6 +1860,14 @@ class LicenseViewSetActionTests(LicenseViewSetActionMixin, TestCase):
             else:
                 with self.assertRaises(ObjectDoesNotExist):
                     SubscriptionLicenseSource.objects.get(license=assigned_license)
+
+            assign_action = LicenseAction.objects.get(
+                license=assigned_license,
+                action_type=constants.LicenseActionType.ASSIGNED,
+            )
+            expected_external_key = salesforce_id.strip() if salesforce_id else None
+            assert assign_action.learner_external_key == expected_external_key
+            assert assign_action.metadata['learner_external_key'] == expected_external_key
 
     @ddt.data(True, False)
     def test_assign_with_less_salesforce_ids(self, use_superuser):
@@ -2373,10 +2423,12 @@ class LicenseViewSetRevokeActionTests(LicenseViewSetActionMixin, TestCase):
             mock.call(bob_license),
         ])
 
-        mock_execute_post_revocation_tasks.assert_has_calls([
-            mock.call(**revoke_alice_license_result),
-            mock.call(**revoke_bob_license_result),
-        ])
+        call_kwargs = [mock_call.kwargs for mock_call in mock_execute_post_revocation_tasks.call_args_list]
+        assert len(call_kwargs) == 2
+        assert {kwargs['source'] for kwargs in call_kwargs} == {constants.LicenseActionSource.ADMIN_API_BULK}
+        assert {kwargs['actor_type'] for kwargs in call_kwargs} == {constants.LicenseActorType.ADMIN}
+        assert {kwargs['actor_lms_user_id'] for kwargs in call_kwargs} == {self.user.id}
+        assert len({kwargs['correlation_id'] for kwargs in call_kwargs}) == 1
 
     @mock.patch('license_manager.apps.api.v1.views.execute_post_revocation_tasks')
     @mock.patch('license_manager.apps.api.v1.views.revoke_license')
@@ -2454,9 +2506,9 @@ class LicenseViewSetRevokeActionTests(LicenseViewSetActionMixin, TestCase):
             mock.call(alice_license_1),
         ])
 
-        mock_execute_post_revocation_tasks.assert_has_calls([
-            mock.call(**revoke_alice_license_result),
-        ])
+        mock_execute_post_revocation_tasks.assert_called_once()
+        actual_source = mock_execute_post_revocation_tasks.call_args.kwargs['source']
+        assert actual_source == constants.LicenseActionSource.ADMIN_API_BULK
 
     @ddt.data(
         ([{'name': 'user_email', 'filter_value': 'al'}], ['alice@example.com']),
@@ -2704,7 +2756,13 @@ class LicenseViewSetRevokeActionTests(LicenseViewSetActionMixin, TestCase):
         self._setup_request_jwt(user=self.super_user)
         response = self.api_client.post(self.revoke_all_licenses_url, {})
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        mock_revoke_all_licenses_task.assert_called()
+        mock_revoke_all_licenses_task.assert_called_once()
+        call_args = mock_revoke_all_licenses_task.call_args
+        assert call_args.args == (str(self.subscription_plan.uuid),)
+        assert call_args.kwargs['actor_lms_user_id'] == self.super_user.id
+        assert call_args.kwargs['actor_type'] == constants.LicenseActorType.ADMIN
+        assert call_args.kwargs['source'] == constants.LicenseActionSource.ADMIN_API
+        assert call_args.kwargs['correlation_id']
 
     @ddt.data(
         {'is_revocation_cap_enabled': True},

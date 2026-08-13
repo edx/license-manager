@@ -65,6 +65,7 @@ from license_manager.apps.subscriptions.exceptions import (
 from license_manager.apps.subscriptions.models import (
     CustomerAgreement,
     License,
+    LicenseAction,
     SubscriptionLicenseSource,
     SubscriptionLicenseSourceType,
     SubscriptionPlan,
@@ -1175,6 +1176,40 @@ class LicenseAdminViewSet(BaseLicenseViewSet):
                 logger.exception(error_message)
                 return Response(error_message, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
             else:
+                correlation_id = str(uuid4())
+                actor_lms_user_id = request.user.id
+
+                try:
+                    LicenseAction.objects.bulk_create([
+                        LicenseAction(
+                            license=_license,
+                            subscription_plan=subscription_plan,
+                            enterprise_customer_uuid=subscription_plan.enterprise_customer_uuid,
+                            action_type=constants.LicenseActionType.ASSIGNED,
+                            actor_type=constants.LicenseActorType.ADMIN,
+                            actor_lms_user_id=actor_lms_user_id,
+                            learner_lms_user_id=_license.lms_user_id,
+                            learner_email=_license.user_email,
+                            learner_external_key=(
+                                (emails_and_sfids.get(_license.user_email) or None) if emails_and_sfids else None
+                            ),
+                            source=constants.LicenseActionSource.ADMIN_API_BULK,
+                            correlation_id=correlation_id,
+                            metadata={
+                                'batch_size': len(assigned_licenses),
+                                'requested_email_count': len(user_emails),
+                                'learner_external_key': (
+                                    (emails_and_sfids.get(_license.user_email) or None) if emails_and_sfids else None
+                                ),
+                            },
+                        ) for _license in assigned_licenses
+                    ], batch_size=constants.LICENSE_BULK_OPERATION_BATCH_SIZE)
+                except Exception:  # pylint: disable=broad-except
+                    logger.exception(
+                        'Failed to write assigned LicenseAction rows for subscription %s; continuing assignment flow.',
+                        subscription_plan.uuid,
+                    )
+
                 # Track license changes and do any other tasks that may want to
                 # read from the License DB table outside of the transaction.atomic() block,
                 # so that they can read the committed and updated versions
@@ -1451,6 +1486,8 @@ class LicenseAdminViewSet(BaseLicenseViewSet):
 
         revocation_results = []
         error_messages = []
+        correlation_id = str(uuid4())
+        actor_lms_user_id = request.user.id
 
         with transaction.atomic():
             for user_email in user_emails:
@@ -1483,7 +1520,13 @@ class LicenseAdminViewSet(BaseLicenseViewSet):
         revocation_succeeded = []
         for revocation_result in revocation_results:
             user_email = revocation_result.pop('user_email', None)
-            execute_post_revocation_tasks(**revocation_result)
+            execute_post_revocation_tasks(
+                **revocation_result,
+                actor_lms_user_id=actor_lms_user_id,
+                actor_type=constants.LicenseActorType.ADMIN,
+                source=constants.LicenseActionSource.ADMIN_API_BULK,
+                correlation_id=correlation_id,
+            )
             revocation_succeeded.append({
                 'license_uuid': str(revocation_result['revoked_license'].uuid),
                 'original_status': str(revocation_result['original_status']),
@@ -1499,7 +1542,7 @@ class LicenseAdminViewSet(BaseLicenseViewSet):
             return Response(data=results, status=status.HTTP_207_MULTI_STATUS)
 
     @action(detail=False, methods=['post'], url_path='revoke-all')
-    def revoke_all(self, _, subscription_uuid=None):
+    def revoke_all(self, request, subscription_uuid=None):
         """
         Revokes all licenses in a subscription plan,
         This will result in any existing enrollments for the revoked users
@@ -1527,7 +1570,13 @@ class LicenseAdminViewSet(BaseLicenseViewSet):
             return Response('Cannot revoke all licenses when revocation cap is enabled for the subscription plan',
                             status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-        revoke_all_licenses_task.delay(subscription_uuid)
+        revoke_all_licenses_task.delay(
+            subscription_uuid,
+            actor_lms_user_id=request.user.id,
+            actor_type=constants.LicenseActorType.ADMIN,
+            source=constants.LicenseActionSource.ADMIN_API,
+            correlation_id=str(uuid4()),
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get'])

@@ -2356,7 +2356,14 @@ class SubscriptionPlanRenewalProvisioningAdminViewset(
                     status=status.HTTP_200_OK,
                 )
 
-            renew_subscription(renewal, is_auto_renewed=False)
+            renew_subscription(
+                renewal,
+                is_auto_renewed=False,
+                actor_type=constants.LicenseActorType.ADMIN,
+                actor_lms_user_id=request.user.id,
+                source=constants.LicenseActionSource.API,
+                correlation_id=str(uuid4()),
+            )
 
             serializer = self.get_serializer(renewal)
             return Response(serializer.data, status=status.HTTP_201_CREATED)

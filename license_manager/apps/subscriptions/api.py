@@ -2,6 +2,7 @@
 Python APIs exposed by the Subscriptions app to other in-process apps.
 """
 import logging
+from uuid import uuid4
 
 from django.db import transaction
 from requests.exceptions import HTTPError
@@ -14,6 +15,9 @@ from .constants import (
     ASSIGNED,
     REVOCABLE_LICENSE_STATUSES,
     UNASSIGNED,
+    LicenseActionSource,
+    LicenseActionType,
+    LicenseActorType,
     LicenseTypesToRenew,
     SegmentEvents,
 )
@@ -23,7 +27,7 @@ from .exceptions import (
     RenewalProcessingError,
     UnprocessableSubscriptionPlanFreezeError,
 )
-from .models import License, SubscriptionPlan
+from .models import License, LicenseAction, SubscriptionPlan
 from .utils import localized_utcnow
 
 
@@ -71,7 +75,14 @@ def revoke_license(user_license):
     }
 
 
-def renew_subscription(subscription_plan_renewal, is_auto_renewed=False):
+def renew_subscription(
+    subscription_plan_renewal,
+    is_auto_renewed=False,
+    actor_type=LicenseActorType.SYSTEM,
+    actor_lms_user_id=None,
+    source=LicenseActionSource.RENEWAL_JOB,
+    correlation_id=None,
+):
     """
     Renew the subscription plan.
     """
@@ -128,7 +139,12 @@ def renew_subscription(subscription_plan_renewal, is_auto_renewed=False):
         _renew_all_licenses(
             original_licenses,
             future_plan,
-            is_auto_renewed
+            is_auto_renewed,
+            subscription_plan_renewal,
+            actor_type=actor_type,
+            actor_lms_user_id=actor_lms_user_id,
+            source=source,
+            correlation_id=correlation_id,
         )
 
         if original_plan.should_auto_apply_licenses:
@@ -145,13 +161,26 @@ def renew_subscription(subscription_plan_renewal, is_auto_renewed=False):
         subscription_plan_renewal.save()
 
 
-def _renew_all_licenses(original_licenses, future_plan, is_auto_renewed):
+def _renew_all_licenses(
+    original_licenses,
+    future_plan,
+    is_auto_renewed,
+    subscription_plan_renewal,
+    actor_type,
+    actor_lms_user_id,
+    source,
+    correlation_id,
+):
     """
     We assume at this point that the future plan has at least as many licenses
     as the number of licenses in the original plan.  Does a bulk update of
     the renewed licenses.
     """
     future_licenses = []
+    renewed_license_pairs = []
+
+    if not correlation_id:
+        correlation_id = str(uuid4())
 
     for original_license, future_license in zip(original_licenses, future_plan.licenses.all()):
         future_license.status = original_license.status
@@ -163,7 +192,7 @@ def _renew_all_licenses(original_licenses, future_plan, is_auto_renewed):
             future_license.activation_date = future_plan.start_date
 
         future_licenses.append(future_license)
-
+        renewed_license_pairs.append((original_license, future_license))
         original_license.renewed_to = future_license
     License.bulk_update(
         future_licenses,
@@ -173,6 +202,39 @@ def _renew_all_licenses(original_licenses, future_plan, is_auto_renewed):
         original_licenses,
         ['renewed_to'],
     )
+
+    try:
+        with transaction.atomic():
+            LicenseAction.objects.bulk_create([
+                LicenseAction(
+                    license=future_license,
+                    subscription_plan=future_plan,
+                    enterprise_customer_uuid=future_plan.enterprise_customer_uuid,
+                    action_type=LicenseActionType.RENEWED,
+                    actor_type=actor_type,
+                    actor_lms_user_id=actor_lms_user_id,
+                    learner_lms_user_id=future_license.lms_user_id,
+                    learner_email=future_license.user_email,
+                    source=source,
+                    correlation_id=correlation_id,
+                    metadata={
+                        'renewal_id': subscription_plan_renewal.id,
+                        'prior_subscription_plan_uuid': str(
+                            subscription_plan_renewal.prior_subscription_plan.uuid
+                        ),
+                        'renewed_subscription_plan_uuid': str(future_plan.uuid),
+                        'original_license_uuid': str(original_license.uuid),
+                        'original_status': original_license.status,
+                        'is_auto_renewed': is_auto_renewed,
+                    },
+                )
+                for original_license, future_license in renewed_license_pairs
+            ])
+    except Exception:  # pylint: disable=broad-except
+        logger.exception(
+            'Failed to write renewed LicenseAction rows for renewal %s; continuing renewal flow.',
+            subscription_plan_renewal.id,
+        )
 
     event_utils.track_license_changes(future_licenses, SegmentEvents.LICENSE_RENEWED, {
         'is_auto_renewed': is_auto_renewed

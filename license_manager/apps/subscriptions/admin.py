@@ -21,6 +21,10 @@ from license_manager.apps.subscriptions.api import (
     sync_agreement_with_enterprise_customer,
     toggle_auto_apply_licenses,
 )
+from license_manager.apps.subscriptions.constants import (
+    LicenseActionSource,
+    LicenseActorType,
+)
 from license_manager.apps.subscriptions.exceptions import CustomerAgreementError
 from license_manager.apps.subscriptions.forms import (
     BulkDeleteForm,
@@ -669,8 +673,15 @@ class SubscriptionPlanRenewalAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         """
         Process selected renewal records
         """
+        correlation_id = str(uuid.uuid4())
         for renewal in queryset:
-            renew_subscription(renewal)
+            renew_subscription(
+                renewal,
+                actor_type=LicenseActorType.ADMIN,
+                actor_lms_user_id=request.user.id,
+                source=LicenseActionSource.ADMIN_UI,
+                correlation_id=correlation_id,
+            )
 
     @admin.display(
         description='Subscription Title',

@@ -4,12 +4,15 @@ from unittest import mock
 
 import ddt
 import freezegun
+from django.db import IntegrityError
+from django.db.models.query import QuerySet
 from django.test import TestCase
 from requests.exceptions import HTTPError
 
 from license_manager.apps.subscriptions import api, constants, exceptions, utils
 from license_manager.apps.subscriptions.models import (
     CustomerAgreement,
+    LicenseAction,
     SubscriptionPlan,
 )
 from license_manager.apps.subscriptions.tests.factories import (
@@ -261,6 +264,128 @@ class RenewalProcessingTests(TestCase):
         assert mock_track_event.call_args_list[0].args[1] == constants.SegmentEvents.LICENSE_CREATED
         assert mock_track_event.call_args_list[1].args[1] == constants.SegmentEvents.LICENSE_RENEWED
         self.assertTrue(mock_track_event.call_args_list[1].args[2]['is_auto_renewed'])
+
+    def test_renewal_creates_license_actions_with_provided_context(self):
+        prior_plan = SubscriptionPlanFactory()
+        activated_license = LicenseFactory.create(
+            subscription_plan=prior_plan,
+            status=constants.ACTIVATED,
+            user_email='activated_user@example.com',
+            lms_user_id=11,
+        )
+        assigned_license = LicenseFactory.create(
+            subscription_plan=prior_plan,
+            status=constants.ASSIGNED,
+            user_email='assigned_user@example.com',
+            lms_user_id=22,
+            activation_key=uuid.uuid4(),
+        )
+        renewal = SubscriptionPlanRenewalFactory(
+            prior_subscription_plan=prior_plan,
+            number_of_licenses=2,
+            license_types_to_copy=constants.LicenseTypesToRenew.ASSIGNED_AND_ACTIVATED,
+        )
+
+        api.renew_subscription(
+            renewal,
+            is_auto_renewed=False,
+            actor_type=constants.LicenseActorType.ADMIN,
+            actor_lms_user_id=987,
+            source=constants.LicenseActionSource.API,
+            correlation_id='renew-corr-123',
+        )
+
+        renewal.refresh_from_db()
+        actions = LicenseAction.objects.filter(
+            subscription_plan=renewal.renewed_subscription_plan,
+            action_type=constants.LicenseActionType.RENEWED,
+        )
+        self.assertEqual(actions.count(), 2)
+        self.assertEqual(
+            set(actions.values_list('actor_type', flat=True)),
+            {constants.LicenseActorType.ADMIN},
+        )
+        self.assertEqual(
+            set(actions.values_list('source', flat=True)),
+            {constants.LicenseActionSource.API},
+        )
+        self.assertEqual(
+            set(actions.values_list('actor_lms_user_id', flat=True)),
+            {987},
+        )
+        self.assertEqual(
+            set(actions.values_list('correlation_id', flat=True)),
+            {'renew-corr-123'},
+        )
+
+        actions_by_email = {action.learner_email: action for action in actions}
+        self.assertIn(activated_license.user_email, actions_by_email)
+        self.assertIn(assigned_license.user_email, actions_by_email)
+
+        for action in actions_by_email.values():
+            self.assertEqual(action.metadata['renewal_id'], renewal.id)
+            self.assertEqual(
+                action.metadata['prior_subscription_plan_uuid'],
+                str(renewal.prior_subscription_plan.uuid),
+            )
+            self.assertEqual(
+                action.metadata['renewed_subscription_plan_uuid'],
+                str(renewal.renewed_subscription_plan.uuid),
+            )
+            self.assertFalse(action.metadata['is_auto_renewed'])
+
+    @mock.patch('license_manager.apps.subscriptions.api.logger.exception')
+    def test_renewal_audit_failure_does_not_fail_processing(self, mock_logger_exception):
+        """
+        A genuine ``IntegrityError`` (not a mocked ``Exception``) raised while
+        writing the audit ``LicenseAction`` rows must not roll back or blow up
+        the renewal itself. ``LicenseAction.objects.bulk_create()`` performs
+        its insert inside its own non-savepoint ``transaction.atomic()``
+        block, so on failure it marks the connection for rollback regardless
+        of whether the caller catches the exception; only an inner *savepoint*
+        atomic() around the audit write can contain that. Patching
+        ``bulk_create`` itself (as a prior version of this test did) would
+        bypass that internal atomic block entirely and pass even without the
+        fix, so instead we force the underlying insert (``_batched_insert``)
+        to raise for ``LicenseAction`` only, keeping ``bulk_create()``'s real
+        transaction handling intact and leaving other models' inserts alone.
+        """
+        original_batched_insert = QuerySet._batched_insert  # pylint: disable=protected-access
+
+        def fake_batched_insert(self, objs, fields, batch_size, **kwargs):
+            if self.model is LicenseAction:
+                raise IntegrityError('duplicate key value violates unique constraint')
+            return original_batched_insert(self, objs, fields, batch_size, **kwargs)
+
+        prior_plan = SubscriptionPlanFactory()
+        LicenseFactory.create(
+            subscription_plan=prior_plan,
+            status=constants.ACTIVATED,
+            user_email='activated_user@example.com',
+            lms_user_id=11,
+        )
+        renewal = SubscriptionPlanRenewalFactory(
+            prior_subscription_plan=prior_plan,
+            number_of_licenses=1,
+            license_types_to_copy=constants.LicenseTypesToRenew.ASSIGNED_AND_ACTIVATED,
+        )
+
+        with mock.patch.object(QuerySet, '_batched_insert', new=fake_batched_insert):
+            api.renew_subscription(renewal)
+
+        renewal.refresh_from_db()
+        self.assertTrue(renewal.processed)
+        self.assertIsNotNone(renewal.renewed_subscription_plan)
+
+        # The renewed license was still fully processed despite the audit failure.
+        future_license = renewal.renewed_subscription_plan.licenses.get()
+        self.assertEqual(future_license.status, constants.ACTIVATED)
+        self.assertEqual(future_license.user_email, 'activated_user@example.com')
+
+        # The failed audit write left no partial LicenseAction rows behind.
+        self.assertFalse(LicenseAction.objects.filter(subscription_plan=renewal.renewed_subscription_plan).exists())
+
+        mock_logger_exception.assert_called_once()
 
 
 @ddt.ddt

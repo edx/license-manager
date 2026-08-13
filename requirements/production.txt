@@ -31,11 +31,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/base.txt
-boto3==1.43.55
+boto3==1.43.68
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.43.55
+botocore==1.43.68
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -49,7 +49,7 @@ certifi==2026.7.22
     # via
     #   -r requirements/base.txt
     #   requests
-cffi==2.1.0
+cffi==2.1.1
     # via
     #   -r requirements/base.txt
     #   cryptography
@@ -83,7 +83,7 @@ code-annotations==3.0.0
     # via
     #   -r requirements/base.txt
     #   edx-toggles
-cryptography==49.0.0
+cryptography==50.0.0
     # via
     #   -r requirements/base.txt
     #   pyjwt
@@ -93,7 +93,7 @@ defusedxml==0.7.1
     #   -r requirements/base.txt
     #   python3-openid
     #   social-auth-core
-django==5.2.16
+django==5.2.17
     # via
     #   -c requirements/common_constraints.txt
     #   -r requirements/base.txt
@@ -158,7 +158,7 @@ django-waffle==5.0.0
     #   edx-toggles
 djangoql==0.19.1
     # via -r requirements/base.txt
-djangorestframework==3.17.1
+djangorestframework==3.18.0
     # via
     #   -r requirements/base.txt
     #   djangorestframework-csv
@@ -176,7 +176,7 @@ drf-jwt==1.19.2
     # via
     #   -r requirements/base.txt
     #   edx-drf-extensions
-drf-nested-routers==0.95.0
+drf-nested-routers==0.95.3
     # via -r requirements/base.txt
 drf-spectacular==0.30.0
     # via -r requirements/base.txt
@@ -211,9 +211,9 @@ edx-toggles==6.0.0
     # via
     #   -r requirements/base.txt
     #   edx-auth-backends
-gevent==26.7.0
+gevent==26.8.0
     # via -r requirements/production.in
-greenlet==3.5.4
+greenlet==3.5.5
     # via gevent
 gunicorn==26.0.0
     # via -r requirements/production.in
@@ -265,7 +265,7 @@ oauthlib==3.3.1
     #   -r requirements/base.txt
     #   requests-oauthlib
     #   social-auth-core
-packaging==26.2
+packaging==26.3
     # via
     #   -r requirements/base.txt
     #   gunicorn
@@ -274,7 +274,7 @@ ply==3.11
     # via
     #   -r requirements/base.txt
     #   djangoql
-prompt-toolkit==3.0.52
+prompt-toolkit==3.0.53
     # via
     #   -r requirements/base.txt
     #   click-repl
@@ -320,7 +320,7 @@ python3-openid==3.2.0
     # via
     #   -r requirements/base.txt
     #   social-auth-core
-pytz==2026.2
+pytz==2026.3.post1
     # via -r requirements/base.txt
 pyyaml==6.0.3
     # via
@@ -328,7 +328,7 @@ pyyaml==6.0.3
     #   -r requirements/production.in
     #   code-annotations
     #   drf-spectacular
-redis==8.0.1
+redis==8.1.0
     # via -r requirements/base.txt
 referencing==0.37.0
     # via

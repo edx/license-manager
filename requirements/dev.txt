@@ -36,11 +36,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/validation.txt
-boto3==1.43.68
+boto3==1.43.76
     # via
     #   -r requirements/validation.txt
     #   django-ses
-botocore==1.43.68
+botocore==1.43.76
     # via
     #   -r requirements/validation.txt
     #   boto3
@@ -63,7 +63,7 @@ cffi==2.1.1
     #   -r requirements/validation.txt
     #   cryptography
     #   pynacl
-charset-normalizer==3.4.9
+charset-normalizer==3.5.1
     # via
     #   -r requirements/validation.txt
     #   requests
@@ -169,7 +169,7 @@ django-crum==0.7.9
     #   edx-django-utils
     #   edx-rbac
     #   edx-toggles
-django-debug-toolbar==7.1.0
+django-debug-toolbar==7.1.1
     # via -r requirements/dev.in
 django-durationwidget==1.0.5
     # via -r requirements/validation.txt
@@ -237,13 +237,13 @@ edx-django-utils==8.0.1
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   edx-toggles
-edx-drf-extensions==10.6.0
+edx-drf-extensions==10.7.0
     # via
     #   -r requirements/validation.txt
     #   edx-rbac
 edx-i18n-tools==2.0.0
     # via -r requirements/validation.txt
-edx-lint==6.1.0
+edx-lint==6.2.0
     # via -r requirements/validation.txt
 edx-opaque-keys==4.0.0
     # via
@@ -265,9 +265,9 @@ faker==40.36.0
     #   factory-boy
 freezegun==1.5.5
     # via -r requirements/validation.txt
-gunicorn==26.0.0
+gunicorn==26.1.0
     # via -r requirements/dev.in
-idna==3.18
+idna==3.19
     # via
     #   -r requirements/validation.txt
     #   requests
@@ -316,7 +316,7 @@ kombu==5.6.2
     # via
     #   -r requirements/validation.txt
     #   celery
-lxml[html-clean]==6.1.1
+lxml[html-clean]==6.1.2
     # via
     #   -r requirements/validation.txt
     #   edx-i18n-tools
@@ -351,7 +351,6 @@ packaging==26.3
     #   -r requirements/pip-tools.txt
     #   -r requirements/validation.txt
     #   build
-    #   gunicorn
     #   kombu
     #   pytest
     #   wheel
@@ -366,7 +365,7 @@ pip-tools==7.6.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/pip-tools.txt
-platformdirs==4.11.2
+platformdirs==4.11.3
     # via
     #   -r requirements/validation.txt
     #   pylint
@@ -400,7 +399,7 @@ pycparser==3.0
     #   cffi
 pydocstyle==6.3.0
     # via -r requirements/validation.txt
-pygments==2.20.0
+pygments==2.21.0
     # via
     #   -r requirements/validation.txt
     #   diff-cover
@@ -542,12 +541,12 @@ social-auth-core==4.9.1
     #   -r requirements/validation.txt
     #   edx-auth-backends
     #   social-auth-app-django
-sqlparse==0.5.5
+sqlparse==0.6.0
     # via
     #   -r requirements/validation.txt
     #   django
     #   django-debug-toolbar
-stevedore==5.9.0
+stevedore==5.9.1
     # via
     #   -r requirements/validation.txt
     #   code-annotations
@@ -601,12 +600,12 @@ wcwidth==0.8.2
     # via
     #   -r requirements/validation.txt
     #   prompt-toolkit
-webencodings==0.5.1
+webencodings==0.6.1
     # via
     #   -r requirements/validation.txt
     #   bleach
     #   tinycss2
-wheel==0.47.0
+wheel==0.48.0
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools

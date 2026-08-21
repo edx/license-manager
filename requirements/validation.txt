@@ -46,12 +46,12 @@ bleach[css]==6.4.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
-boto3==1.43.68
+boto3==1.43.76
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   django-ses
-botocore==1.43.68
+botocore==1.43.76
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -74,7 +74,7 @@ cffi==2.1.1
     #   -r requirements/test.txt
     #   cryptography
     #   pynacl
-charset-normalizer==3.4.9
+charset-normalizer==3.5.1
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -284,14 +284,14 @@ edx-django-utils==8.0.1
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   edx-toggles
-edx-drf-extensions==10.6.0
+edx-drf-extensions==10.7.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   edx-rbac
 edx-i18n-tools==2.0.0
     # via -r requirements/validation.in
-edx-lint==6.1.0
+edx-lint==6.2.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -321,7 +321,7 @@ faker==40.36.0
     #   factory-boy
 freezegun==1.5.5
     # via -r requirements/test.txt
-idna==3.18
+idna==3.19
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -371,7 +371,7 @@ kombu==5.6.2
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   celery
-lxml[html-clean]==6.1.1
+lxml[html-clean]==6.1.2
     # via
     #   edx-i18n-tools
     #   lxml-html-clean
@@ -414,7 +414,7 @@ path==16.14.0
     #   edx-i18n-tools
 pathlib2==2.3.7.post1
     # via -r requirements/validation.in
-platformdirs==4.11.2
+platformdirs==4.11.3
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -450,7 +450,7 @@ pycparser==3.0
     #   cffi
 pydocstyle==6.3.0
     # via -r requirements/quality.txt
-pygments==2.20.0
+pygments==2.21.0
     # via
     #   -r requirements/test.txt
     #   pytest
@@ -612,12 +612,12 @@ social-auth-core==4.9.1
     #   -r requirements/test.txt
     #   edx-auth-backends
     #   social-auth-app-django
-sqlparse==0.5.5
+sqlparse==0.6.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   django
-stevedore==5.9.0
+stevedore==5.9.1
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -679,7 +679,7 @@ wcwidth==0.8.2
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   prompt-toolkit
-webencodings==0.5.1
+webencodings==0.6.1
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt

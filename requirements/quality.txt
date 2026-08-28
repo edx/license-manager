@@ -35,11 +35,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/base.txt
-boto3==1.43.76
+boto3==1.43.82
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.43.76
+botocore==1.43.82
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -62,7 +62,7 @@ charset-normalizer==3.5.1
     # via
     #   -r requirements/base.txt
     #   requests
-click==8.4.2
+click==8.5.0
     # via
     #   -r requirements/base.txt
     #   celery
@@ -92,7 +92,7 @@ code-annotations==3.0.0
     #   -r requirements/base.txt
     #   edx-lint
     #   edx-toggles
-cryptography==50.0.0
+cryptography==50.0.1
     # via
     #   -r requirements/base.txt
     #   pyjwt
@@ -282,7 +282,7 @@ packaging==26.3
     # via
     #   -r requirements/base.txt
     #   kombu
-platformdirs==4.11.3
+platformdirs==4.11.5
     # via pylint
 ply==3.11
     # via
@@ -389,7 +389,7 @@ semantic-version==2.10.0
     # via
     #   -r requirements/base.txt
     #   edx-drf-extensions
-simplejson==4.1.1
+simplejson==4.1.2
     # via -r requirements/base.txt
 six==1.17.0
     # via

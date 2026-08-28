@@ -36,16 +36,16 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/validation.txt
-boto3==1.43.76
+boto3==1.43.82
     # via
     #   -r requirements/validation.txt
     #   django-ses
-botocore==1.43.76
+botocore==1.43.82
     # via
     #   -r requirements/validation.txt
     #   boto3
     #   s3transfer
-build==1.5.0
+build==1.6.0
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools
@@ -67,7 +67,7 @@ charset-normalizer==3.5.1
     # via
     #   -r requirements/validation.txt
     #   requests
-click==8.4.2
+click==8.5.0
     # via
     #   -r requirements/pip-tools.txt
     #   -r requirements/validation.txt
@@ -105,7 +105,7 @@ coverage[toml]==7.15.4
     # via
     #   -r requirements/validation.txt
     #   pytest-cov
-cryptography==50.0.0
+cryptography==50.0.1
     # via
     #   -r requirements/validation.txt
     #   pyjwt
@@ -259,13 +259,13 @@ edx-toggles==6.0.0
     #   edx-auth-backends
 factory-boy==3.3.3
     # via -r requirements/validation.txt
-faker==40.36.0
+faker==40.37.0
     # via
     #   -r requirements/validation.txt
     #   factory-boy
 freezegun==1.5.5
     # via -r requirements/validation.txt
-gunicorn==26.1.0
+gunicorn==26.2.0
     # via -r requirements/dev.in
 idna==3.19
     # via
@@ -365,7 +365,7 @@ pip-tools==7.6.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/pip-tools.txt
-platformdirs==4.11.3
+platformdirs==4.11.5
     # via
     #   -r requirements/validation.txt
     #   pylint
@@ -513,7 +513,7 @@ semantic-version==2.10.0
     # via
     #   -r requirements/validation.txt
     #   edx-drf-extensions
-simplejson==4.1.1
+simplejson==4.1.2
     # via -r requirements/validation.txt
 six==1.17.0
     # via

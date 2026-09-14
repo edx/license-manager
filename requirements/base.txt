@@ -25,9 +25,9 @@ billiard==4.2.4
     # via celery
 bleach[css]==6.4.0
     # via -r requirements/base.in
-boto3==1.43.88
+boto3==1.43.92
     # via django-ses
-botocore==1.43.88
+botocore==1.43.92
     # via
     #   boto3
     #   s3transfer
@@ -132,7 +132,7 @@ django-waffle==5.0.0
     #   edx-toggles
 djangoql==0.19.1
     # via -r requirements/base.in
-djangorestframework==3.18.0
+djangorestframework==3.18.1
     # via
     #   -r requirements/base.in
     #   djangorestframework-csv
@@ -224,7 +224,7 @@ pyjwt[crypto]==2.13.0
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   social-auth-core
-pymongo==4.18.0
+pymongo==4.18.1
     # via edx-opaque-keys
 pynacl==1.6.2
     # via edx-django-utils
@@ -233,7 +233,7 @@ python-dateutil==2.9.0.post0
     #   analytics-python
     #   botocore
     #   celery
-python-slugify==8.0.4
+python-slugify==9.0.0
     # via code-annotations
 python3-openid==3.2.0
     # via social-auth-core

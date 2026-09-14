@@ -46,11 +46,11 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/test.txt
-boto3==1.43.88
+boto3==1.43.92
     # via
     #   -r requirements/test.txt
     #   django-ses
-botocore==1.43.88
+botocore==1.43.92
     # via
     #   -r requirements/test.txt
     #   boto3
@@ -192,7 +192,7 @@ django-waffle==5.0.0
     #   edx-toggles
 djangoql==0.19.1
     # via -r requirements/test.txt
-djangorestframework==3.18.0
+djangorestframework==3.18.1
     # via
     #   -r requirements/test.txt
     #   djangorestframework-csv
@@ -340,7 +340,7 @@ packaging==26.3
     #   kombu
     #   pytest
     #   sphinx
-platformdirs==4.11.7
+platformdirs==4.11.8
     # via
     #   -r requirements/test.txt
     #   pylint
@@ -404,7 +404,7 @@ pylint-plugin-utils==0.9.0
     #   -r requirements/test.txt
     #   pylint-celery
     #   pylint-django
-pymongo==4.18.0
+pymongo==4.18.1
     # via
     #   -r requirements/test.txt
     #   edx-opaque-keys
@@ -428,7 +428,7 @@ python-dateutil==2.9.0.post0
     #   botocore
     #   celery
     #   freezegun
-python-slugify==8.0.4
+python-slugify==9.0.0
     # via
     #   -r requirements/test.txt
     #   code-annotations

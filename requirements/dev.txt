@@ -36,16 +36,16 @@ billiard==4.2.4
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/validation.txt
-boto3==1.43.88
+boto3==1.43.92
     # via
     #   -r requirements/validation.txt
     #   django-ses
-botocore==1.43.88
+botocore==1.43.92
     # via
     #   -r requirements/validation.txt
     #   boto3
     #   s3transfer
-build==1.6.0
+build==1.6.1
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools
@@ -200,7 +200,7 @@ django-waffle==5.0.0
     #   edx-toggles
 djangoql==0.19.1
     # via -r requirements/validation.txt
-djangorestframework==3.18.0
+djangorestframework==3.18.1
     # via
     #   -r requirements/validation.txt
     #   djangorestframework-csv
@@ -369,7 +369,7 @@ pip-tools==7.6.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/pip-tools.txt
-platformdirs==4.11.7
+platformdirs==4.11.8
     # via
     #   -r requirements/validation.txt
     #   pylint
@@ -436,7 +436,7 @@ pylint-plugin-utils==0.9.0
     #   -r requirements/validation.txt
     #   pylint-celery
     #   pylint-django
-pymongo==4.18.0
+pymongo==4.18.1
     # via
     #   -r requirements/validation.txt
     #   edx-opaque-keys
@@ -465,7 +465,7 @@ python-dateutil==2.9.0.post0
     #   botocore
     #   celery
     #   freezegun
-python-slugify==8.0.4
+python-slugify==9.0.0
     # via
     #   -r requirements/validation.txt
     #   code-annotations

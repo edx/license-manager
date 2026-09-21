@@ -21,13 +21,13 @@ backoff==1.10.0
     # via
     #   -r requirements/base.in
     #   analytics-python
-billiard==4.2.4
+billiard==4.3.0
     # via celery
 bleach[css]==6.4.0
     # via -r requirements/base.in
-boto3==1.43.92
+boto3==1.43.97
     # via django-ses
-botocore==1.43.92
+botocore==1.43.97
     # via
     #   boto3
     #   s3transfer
@@ -56,7 +56,7 @@ click-didyoumean==0.3.1
     # via celery
 click-plugins==1.1.1.2
     # via celery
-click-repl==0.3.0
+click-repl==0.4.0
     # via celery
 code-annotations==3.0.0
     # via edx-toggles
@@ -165,7 +165,7 @@ edx-django-utils==8.0.2
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   edx-toggles
-edx-drf-extensions==10.8.0
+edx-drf-extensions==10.9.0
     # via
     #   -r requirements/base.in
     #   edx-rbac
@@ -179,7 +179,7 @@ edx-toggles==6.0.0
     # via
     #   -r requirements/base.in
     #   edx-auth-backends
-idna==3.19
+idna==3.20
     # via requests
 inflection==0.5.1
     # via drf-spectacular
@@ -201,7 +201,7 @@ markupsafe==3.0.3
     # via jinja2
 monotonic==1.6
     # via analytics-python
-mysqlclient==2.2.8
+mysqlclient==2.3.0
     # via -r requirements/base.in
 oauthlib==3.3.1
     # via
@@ -217,7 +217,7 @@ psutil==7.2.2
     # via edx-django-utils
 pycparser==3.0
     # via cffi
-pyjwt[crypto]==2.13.0
+pyjwt[crypto]==2.14.0
     # via
     #   drf-jwt
     #   edx-auth-backends
@@ -300,15 +300,16 @@ tinycss2==1.5.1
     # via bleach
 typing-extensions==4.16.0
     # via
+    #   click-repl
     #   edx-opaque-keys
     #   referencing
-tzdata==2026.3
+tzdata==2026.4
     # via kombu
 tzlocal==5.4.4
     # via celery
 uritemplate==4.2.0
     # via drf-spectacular
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   botocore
     #   requests
@@ -317,7 +318,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.8.3
+wcwidth==0.8.4
     # via prompt-toolkit
 webencodings==0.6.1
     # via

@@ -4,7 +4,7 @@
 #
 #    make upgrade
 #
-amqp==5.3.1
+amqp==5.4.0
     # via
     #   -r requirements/base.txt
     #   kombu
@@ -16,7 +16,7 @@ asgiref==3.12.1
     #   django
     #   django-cors-headers
     #   social-auth-app-django
-astroid==4.0.4
+astroid==4.3.3
     # via
     #   pylint
     #   pylint-celery
@@ -35,11 +35,11 @@ billiard==4.3.0
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/base.txt
-boto3==1.43.97
+boto3==1.43.107
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.43.97
+botocore==1.43.107
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -58,7 +58,7 @@ cffi==2.1.1
     #   -r requirements/base.txt
     #   cryptography
     #   pynacl
-charset-normalizer==3.5.1
+charset-normalizer==3.5.2
     # via
     #   -r requirements/base.txt
     #   requests
@@ -93,11 +93,11 @@ code-annotations==3.0.0
     #   -r requirements/test.in
     #   edx-lint
     #   edx-toggles
-coverage[toml]==7.16.1
+coverage[toml]==7.16.2
     # via
     #   -r requirements/test.in
     #   pytest-cov
-cryptography==50.0.1
+cryptography==50.0.2
     # via
     #   -r requirements/base.txt
     #   pyjwt
@@ -199,7 +199,7 @@ drf-nested-routers==0.95.3
     # via -r requirements/base.txt
 drf-spectacular==0.30.0
     # via -r requirements/base.txt
-edx-auth-backends==5.0.0
+edx-auth-backends==5.1.0
     # via -r requirements/base.txt
 edx-braze-client==0.2.5
     # via
@@ -207,7 +207,7 @@ edx-braze-client==0.2.5
     #   -r requirements/base.txt
 edx-celeryutils==2.0.0
     # via -r requirements/base.txt
-edx-django-utils==8.0.2
+edx-django-utils==8.1.0
     # via
     #   -r requirements/base.txt
     #   edx-auth-backends
@@ -220,13 +220,13 @@ edx-drf-extensions==10.9.0
     #   edx-rbac
 edx-lint==6.2.0
     # via -r requirements/test.in
-edx-opaque-keys==4.0.0
+edx-opaque-keys==4.0.1
     # via
     #   -r requirements/base.txt
     #   edx-drf-extensions
 edx-rbac==3.0.0
     # via -r requirements/base.txt
-edx-rest-api-client==7.0.0
+edx-rest-api-client==7.1.0
     # via -r requirements/base.txt
 edx-toggles==6.0.0
     # via
@@ -234,7 +234,7 @@ edx-toggles==6.0.0
     #   edx-auth-backends
 factory-boy==3.3.3
     # via -r requirements/test.in
-faker==40.39.0
+faker==40.40.0
     # via factory-boy
 freezegun==1.5.5
     # via -r requirements/test.in
@@ -248,7 +248,7 @@ inflection==0.5.1
     #   drf-spectacular
 iniconfig==2.3.0
     # via pytest
-isort==9.0.1
+isort==9.0.2
     # via pylint
 jinja2==3.1.6
     # via
@@ -289,7 +289,7 @@ mypy-extensions==1.1.0
     # via isort
 mysqlclient==2.3.0
     # via -r requirements/base.txt
-oauthlib==3.3.1
+oauthlib==4.0.0
     # via
     #   -r requirements/base.txt
     #   requests-oauthlib
@@ -299,7 +299,7 @@ packaging==26.3
     #   -r requirements/base.txt
     #   kombu
     #   pytest
-platformdirs==4.11.10
+platformdirs==4.12.2
     # via pylint
 pluggy==1.6.0
     # via
@@ -323,7 +323,7 @@ pycparser==3.0
     #   cffi
 pygments==2.21.0
     # via pytest
-pyjwt[crypto]==2.14.0
+pyjwt[crypto]==2.15.1
     # via
     #   -r requirements/base.txt
     #   drf-jwt
@@ -331,7 +331,7 @@ pyjwt[crypto]==2.14.0
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   social-auth-core
-pylint==4.0.8
+pylint==4.1.1
     # via
     #   edx-lint
     #   pylint-celery
@@ -345,7 +345,7 @@ pylint-plugin-utils==0.9.0
     # via
     #   pylint-celery
     #   pylint-django
-pymongo==4.18.1
+pymongo==4.18.2
     # via
     #   -r requirements/base.txt
     #   edx-opaque-keys
@@ -368,7 +368,7 @@ python-dateutil==2.9.0.post0
     #   botocore
     #   celery
     #   freezegun
-python-slugify==9.0.0
+python-slugify==9.1.2
     # via
     #   -r requirements/base.txt
     #   code-annotations
@@ -376,7 +376,7 @@ python3-openid==3.2.0
     # via
     #   -r requirements/base.txt
     #   social-auth-core
-pytz==2026.3.post1
+pytz==2026.4
     # via -r requirements/base.txt
 pyyaml==6.0.3
     # via
@@ -491,7 +491,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.8.4
+wcwidth==0.9.1
     # via
     #   -r requirements/base.txt
     #   prompt-toolkit

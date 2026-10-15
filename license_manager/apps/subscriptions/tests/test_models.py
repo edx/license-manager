@@ -6,6 +6,7 @@ import ddt
 import freezegun
 import pytest
 from django.core.cache import cache
+from django.db import DatabaseError
 from django.forms import ValidationError
 from django.test import TestCase
 
@@ -20,6 +21,7 @@ from license_manager.apps.subscriptions.models import (
     License,
     LicenseTransferJob,
     Notification,
+    SubscriptionLicenseSource,
     SubscriptionLicenseSourceType,
 )
 from license_manager.apps.subscriptions.tests.factories import (
@@ -537,6 +539,19 @@ class SubscriptionLicenseSourceModelTests(TestCase):
 
         exception_message = ['Ensure this value has at least 18 characters (it has 9).']
         assert raised_exception.value.args[0]['source_id'][0].messages == exception_message
+
+    def test_unassign_duplicate_license_is_atomic(self):
+        """
+        Verify that unassigning a duplicate license rolls back the source deletion if saving the
+        license fails, so the source and the license's status change together or not at all.
+        """
+        SubscriptionLicenseSourceFactory(license=self.active_current_license)
+
+        with mock.patch.object(License, 'save', side_effect=DatabaseError):
+            with pytest.raises(DatabaseError):
+                License._unassign_duplicate_license(self.active_current_license)  # pylint: disable=protected-access
+
+        assert SubscriptionLicenseSource.objects.filter(license=self.active_current_license).exists()
 
 
 @ddt.ddt

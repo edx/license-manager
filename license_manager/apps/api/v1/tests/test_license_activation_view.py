@@ -14,8 +14,12 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from license_manager.apps.subscriptions import constants
-from license_manager.apps.subscriptions.models import License
+from license_manager.apps.subscriptions.models import (
+    License,
+    SubscriptionLicenseSource,
+)
 from license_manager.apps.subscriptions.tests.factories import (
+    SubscriptionLicenseSourceFactory,
     SubscriptionPlanFactory,
 )
 from license_manager.apps.subscriptions.utils import localized_utcnow
@@ -230,6 +234,8 @@ class LicenseActivationViewTests(LicenseViewTestMixin, TestCase):
             assigned_date=self.now - datetime.timedelta(days=2),
             activation_key=uuid4(),
         )
+        SubscriptionLicenseSourceFactory.create(license=license_a)
+        license_b_source = SubscriptionLicenseSourceFactory.create(license=license_b)
 
         with freeze_time(self.now):
             response = self._post_request(str(self.activation_key))
@@ -257,6 +263,11 @@ class LicenseActivationViewTests(LicenseViewTestMixin, TestCase):
         assert constants.UNASSIGNED == license_c.status
         self.assertIsNone(license_c.lms_user_id)
         self.assertIsNone(license_c.activation_key)
+
+        # The unassigned duplicates must not keep their sources, or the next assignment
+        # that picks them up fails on the one-to-one constraint.
+        assert not SubscriptionLicenseSource.objects.filter(license__in=[license_a, license_c]).exists()
+        assert SubscriptionLicenseSource.objects.get(license=license_b) == license_b_source
 
         revoked_license.refresh_from_db()
         assert constants.REVOKED == revoked_license.status
@@ -286,6 +297,8 @@ class LicenseActivationViewTests(LicenseViewTestMixin, TestCase):
             activation_date=self.now,
             activation_key=self.activation_key,
         )
+        SubscriptionLicenseSourceFactory.create(license=license_a)
+        license_b_source = SubscriptionLicenseSourceFactory.create(license=license_b)
 
         with freeze_time(self.now):
             response = self._post_request(str(license_a_activation_key))
@@ -309,6 +322,9 @@ class LicenseActivationViewTests(LicenseViewTestMixin, TestCase):
         self.assertIsNone(license_a.lms_user_id)
         self.assertIsNone(license_a.activation_key)
         self.assertIsNone(license_a.activation_date)
+
+        assert not SubscriptionLicenseSource.objects.filter(license=license_a).exists()
+        assert SubscriptionLicenseSource.objects.get(license=license_b) == license_b_source
 
     def test_activating_revoked_license_returns_422(self):
         self._assign_learner_roles(

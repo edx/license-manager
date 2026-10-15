@@ -1052,6 +1052,15 @@ class LicenseAdminViewSet(BaseLicenseViewSet):
             batch_size=10,
         )
 
+        # An unassigned license can still carry the source from a previous assignment. Clear it so the
+        # new assignment isn't attributed to the old Salesforce opportunity, and so that creating a new
+        # source doesn't violate the one-to-one constraint and roll back the whole batch.
+        # Use a uuid list: MySQL doesn't support LIMIT in an IN subquery, and tests run on SQLite
+        # so they won't catch it.
+        SubscriptionLicenseSource.objects.filter(
+            license__in=[_license.uuid for _license in licenses],
+        ).delete()
+
         return licenses
 
     def _set_source_for_assigned_licenses(self, assigned_licenses, emails_and_sfids):

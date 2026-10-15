@@ -1869,6 +1869,63 @@ class LicenseViewSetActionTests(LicenseViewSetActionMixin, TestCase):
             assert assign_action.learner_external_key == expected_external_key
             assert assign_action.metadata['learner_external_key'] == expected_external_key
 
+    @mock.patch('license_manager.apps.api.v1.views.link_learners_to_enterprise_task.si')
+    @mock.patch('license_manager.apps.api.v1.views.send_assignment_email_task.si')
+    @ddt.data('0000abc34MS67a8907', None)
+    def test_assign_license_with_stale_source(self, new_sfid, *args):  # pylint: disable=unused-argument
+        """
+        Verify that assigning an unassigned license that still has a source from a previous
+        assignment replaces that source instead of failing the whole request.
+        """
+        self._setup_request_jwt(user=self.user)
+        unassigned_license = self._create_available_licenses(num_licenses=1)[0]
+        stale_source = SubscriptionLicenseSourceFactory.create(license=unassigned_license)
+
+        request_data = {'greeting': self.greeting, 'closing': self.closing, 'user_emails': [self.test_email]}
+        if new_sfid:
+            request_data['user_sfids'] = [new_sfid]
+        response = self.api_client.post(self.assign_url, request_data)
+
+        assert response.status_code == status.HTTP_200_OK
+        self._assert_licenses_assigned([self.test_email])
+        assert not SubscriptionLicenseSource.objects.filter(pk=stale_source.pk).exists()
+        if new_sfid:
+            assert SubscriptionLicenseSource.objects.get(license=unassigned_license).source_id == new_sfid
+        else:
+            assert not SubscriptionLicenseSource.objects.filter(license=unassigned_license).exists()
+
+    @mock.patch('license_manager.apps.api.v1.views.link_learners_to_enterprise_task.si')
+    @mock.patch('license_manager.apps.api.v1.views.send_assignment_email_task.si')
+    def test_assign_batch_with_stale_sources(self, *args):  # pylint: disable=unused-argument
+        """
+        Verify that a batch assignment clears the stale sources on every license it picks, and
+        only creates sources for the emails that came with a Salesforce ID.
+        """
+        self._setup_request_jwt(user=self.user)
+        unassigned_licenses = self._create_available_licenses(num_licenses=3)
+        for unassigned_license in unassigned_licenses[:2]:
+            SubscriptionLicenseSourceFactory.create(license=unassigned_license)
+
+        user_emails = ['bb8@mit.edu', self.test_email, 'ama@example.com']
+        new_sfid = '0000abc34MS67a8907'
+        response = self.api_client.post(
+            self.assign_url,
+            {
+                'greeting': self.greeting,
+                'closing': self.closing,
+                'user_emails': user_emails,
+                'user_sfids': [new_sfid, '', None],
+            },
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        self._assert_licenses_assigned(user_emails)
+        remaining_source = SubscriptionLicenseSource.objects.get(
+            license__subscription_plan=self.subscription_plan,
+        )
+        assert remaining_source.source_id == new_sfid
+        assert remaining_source.license.user_email == user_emails[0]
+
     @ddt.data(True, False)
     def test_assign_with_less_salesforce_ids(self, use_superuser):
         """

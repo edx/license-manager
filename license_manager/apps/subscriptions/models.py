@@ -1632,8 +1632,7 @@ class License(TimeStampedModel):
         if activated_license:
             for _license in duplicate_licenses:
                 if _license != activated_license:
-                    _license.reset_to_unassigned()
-                    _license.save()
+                    cls._unassign_duplicate_license(_license)
             return activated_license
 
         # Now there should be only assigned licenses to deal with.
@@ -1645,10 +1644,24 @@ class License(TimeStampedModel):
             reverse=True,
         )
         for duplicate in sorted_licenses[1:]:
-            duplicate.reset_to_unassigned()
-            duplicate.save()
+            cls._unassign_duplicate_license(duplicate)
 
         return sorted_licenses[0]
+
+    @staticmethod
+    def _unassign_duplicate_license(duplicate_license):
+        """
+        Resets a duplicate license to unassigned and deletes its source, if it has one.
+
+        Both happen in one transaction so that a concurrent assignment can't pick up the
+        released license, and have its new source deleted here, before the source is gone.
+        """
+        with transaction.atomic():
+            # Filter rather than ``delete_source()``, which logs a warning when there's no source:
+            # the common case, since sources only exist for assignments made with ``user_sfids``.
+            SubscriptionLicenseSource.objects.filter(license=duplicate_license).delete()
+            duplicate_license.reset_to_unassigned()
+            duplicate_license.save()
 
 
 class LicenseTransferJob(TimeStampedModel):

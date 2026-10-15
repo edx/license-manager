@@ -1634,6 +1634,7 @@ class License(TimeStampedModel):
                 if _license != activated_license:
                     _license.reset_to_unassigned()
                     _license.save()
+                    _license.delete_source()
             return activated_license
 
         # Now there should be only assigned licenses to deal with.
@@ -1647,6 +1648,7 @@ class License(TimeStampedModel):
         for duplicate in sorted_licenses[1:]:
             duplicate.reset_to_unassigned()
             duplicate.save()
+            duplicate.delete_source()
 
         return sorted_licenses[0]
 

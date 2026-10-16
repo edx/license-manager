@@ -36,11 +36,11 @@ billiard==4.3.1
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/validation.txt
-boto3==1.43.110
+boto3==1.43.114
     # via
     #   -r requirements/validation.txt
     #   django-ses
-botocore==1.43.110
+botocore==1.43.114
     # via
     #   -r requirements/validation.txt
     #   boto3
@@ -188,7 +188,7 @@ django-model-utils==5.0.0
     #   -r requirements/validation.txt
     #   edx-celeryutils
     #   edx-rbac
-django-ses==4.8.0
+django-ses==4.8.2
     # via -r requirements/validation.txt
 django-simple-history==3.13.0
     # via -r requirements/validation.txt
@@ -259,7 +259,7 @@ edx-toggles==6.0.0
     #   edx-auth-backends
 factory-boy==3.3.3
     # via -r requirements/validation.txt
-faker==40.41.0
+faker==40.43.0
     # via
     #   -r requirements/validation.txt
     #   factory-boy
@@ -337,7 +337,7 @@ monotonic==1.6
     # via
     #   -r requirements/validation.txt
     #   analytics-python
-more-itertools==11.1.0
+more-itertools==11.2.1
     # via inflect
 mypy-extensions==1.1.0
     # via
@@ -369,11 +369,11 @@ pip-tools==7.6.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/pip-tools.txt
-platformdirs==4.12.4
+platformdirs==4.13.3
     # via
     #   -r requirements/validation.txt
     #   pylint
-pluggy==1.6.0
+pluggy==1.7.0
     # via
     #   -r requirements/validation.txt
     #   diff-cover
@@ -397,7 +397,7 @@ psutil==7.2.2
     #   edx-django-utils
 pycodestyle==2.15.0
     # via -r requirements/validation.txt
-pycparser==3.1
+pycparser==3.11
     # via
     #   -r requirements/validation.txt
     #   cffi
@@ -416,7 +416,7 @@ pyjwt[crypto]==2.15.1
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   social-auth-core
-pylint==4.1.2
+pylint==4.1.3
     # via
     #   -r requirements/validation.txt
     #   edx-lint
@@ -436,7 +436,7 @@ pylint-plugin-utils==0.9.0
     #   -r requirements/validation.txt
     #   pylint-celery
     #   pylint-django
-pymongo==4.18.3
+pymongo==4.19.0
     # via
     #   -r requirements/validation.txt
     #   edx-opaque-keys

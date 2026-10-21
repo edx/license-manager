@@ -36,11 +36,11 @@ billiard==4.3.1
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/validation.txt
-boto3==1.43.114
+boto3==1.43.117
     # via
     #   -r requirements/validation.txt
     #   django-ses
-botocore==1.43.114
+botocore==1.43.117
     # via
     #   -r requirements/validation.txt
     #   boto3
@@ -54,7 +54,7 @@ celery==5.6.3
     #   -r requirements/validation.txt
     #   django-celery-results
     #   edx-celeryutils
-certifi==2026.7.22
+certifi==2026.10.19
     # via
     #   -r requirements/validation.txt
     #   requests
@@ -271,7 +271,7 @@ idna==3.20
     # via
     #   -r requirements/validation.txt
     #   requests
-inflect==7.5.0
+inflect==7.6.0
     # via
     #   -r requirements/dev.in
     #   jinja2-pluralize
@@ -287,6 +287,8 @@ isort==9.0.2
     # via
     #   -r requirements/validation.txt
     #   pylint
+jaraco-functools==4.6.0
+    # via inflect
 jinja2==3.1.6
     # via
     #   -r requirements/validation.txt
@@ -338,7 +340,9 @@ monotonic==1.6
     #   -r requirements/validation.txt
     #   analytics-python
 more-itertools==11.2.1
-    # via inflect
+    # via
+    #   inflect
+    #   jaraco-functools
 mypy-extensions==1.1.0
     # via
     #   -r requirements/validation.txt
@@ -369,7 +373,7 @@ pip-tools==7.6.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/pip-tools.txt
-platformdirs==4.13.3
+platformdirs==4.13.5
     # via
     #   -r requirements/validation.txt
     #   pylint
@@ -509,7 +513,7 @@ rpds-py==2026.9.1
     #   referencing
 rules==3.5
     # via -r requirements/validation.txt
-s3transfer==0.19.2
+s3transfer==0.19.3
     # via
     #   -r requirements/validation.txt
     #   boto3
@@ -564,7 +568,7 @@ tinycss2==1.5.1
     # via
     #   -r requirements/validation.txt
     #   bleach
-tomlkit==0.15.1
+tomlkit==0.15.2
     # via
     #   -r requirements/validation.txt
     #   edx-lint
@@ -601,7 +605,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.9.2
+wcwidth==0.9.3
     # via
     #   -r requirements/validation.txt
     #   prompt-toolkit
@@ -614,7 +618,7 @@ wheel==0.48.0
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools
-zipp==4.1.1
+zipp==4.1.2
     # via -r requirements/validation.txt
 
 # The following packages are considered to be unsafe in a requirements file:

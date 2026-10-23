@@ -25,9 +25,9 @@ billiard==4.3.1
     # via celery
 bleach[css]==6.4.0
     # via -r requirements/base.in
-boto3==1.43.117
+boto3==1.43.118
     # via django-ses
-botocore==1.43.117
+botocore==1.43.118
     # via
     #   boto3
     #   s3transfer
@@ -215,7 +215,7 @@ prompt-toolkit==3.0.53
     # via click-repl
 psutil==7.2.2
     # via edx-django-utils
-pycparser==3.11
+pycparser==3.12
     # via cffi
 pyjwt[crypto]==2.15.1
     # via
@@ -305,7 +305,7 @@ typing-extensions==4.16.0
     #   referencing
 tzdata==2026.5
     # via kombu
-tzlocal==5.4.4
+tzlocal==5.4.5
     # via celery
 uritemplate==4.2.0
     # via drf-spectacular

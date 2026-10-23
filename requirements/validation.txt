@@ -46,12 +46,12 @@ bleach[css]==6.4.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
-boto3==1.43.117
+boto3==1.43.118
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   django-ses
-botocore==1.43.117
+botocore==1.43.118
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -117,7 +117,7 @@ code-annotations==3.0.0
     #   -r requirements/test.txt
     #   edx-lint
     #   edx-toggles
-coverage[toml]==7.16.2
+coverage[toml]==7.17.0
     # via
     #   -r requirements/test.txt
     #   pytest-cov
@@ -448,7 +448,7 @@ psutil==7.2.2
     #   edx-django-utils
 pycodestyle==2.15.0
     # via -r requirements/quality.txt
-pycparser==3.11
+pycparser==3.12
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -657,7 +657,7 @@ tzdata==2026.5
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   kombu
-tzlocal==5.4.4
+tzlocal==5.4.5
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt

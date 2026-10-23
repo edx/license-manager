@@ -31,11 +31,11 @@ billiard==4.3.1
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/base.txt
-boto3==1.43.117
+boto3==1.43.118
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.43.117
+botocore==1.43.118
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -281,7 +281,7 @@ psutil==7.2.2
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
-pycparser==3.11
+pycparser==3.12
     # via
     #   -r requirements/base.txt
     #   cffi
@@ -411,7 +411,7 @@ tzdata==2026.5
     # via
     #   -r requirements/base.txt
     #   kombu
-tzlocal==5.4.4
+tzlocal==5.4.5
     # via
     #   -r requirements/base.txt
     #   celery

@@ -16,6 +16,7 @@ from rest_framework.test import APIClient
 from license_manager.apps.subscriptions import constants
 from license_manager.apps.subscriptions.models import (
     License,
+    LicenseAction,
     SubscriptionLicenseSource,
 )
 from license_manager.apps.subscriptions.tests.factories import (
@@ -166,6 +167,15 @@ class LicenseActivationViewTests(LicenseViewTestMixin, TestCase):
         assert self.lms_user_id == license_to_be_activated.lms_user_id
         assert self.now == license_to_be_activated.activation_date
 
+        # Verify that the activation was audited as a learner action
+        action = LicenseAction.objects.get(license=license_to_be_activated)
+        assert action.action_type == constants.LicenseActionType.ACTIVATED
+        assert action.actor_type == constants.LicenseActorType.LEARNER
+        assert action.actor_lms_user_id == self.user.id
+        assert action.learner_lms_user_id == self.lms_user_id
+        assert action.learner_email == self.user.email
+        assert action.source == constants.LicenseActionSource.API
+
         if disable_onboarding_notifications:
             mock_send_post_activation_email_task.assert_not_called()
         else:
@@ -200,6 +210,30 @@ class LicenseActivationViewTests(LicenseViewTestMixin, TestCase):
         assert constants.ACTIVATED == already_activated_license.status
         assert self.lms_user_id == already_activated_license.lms_user_id
         assert self.now == already_activated_license.activation_date
+        # Re-activating an activated license is a no-op, so it is not audited again
+        assert not LicenseAction.objects.filter(license=already_activated_license).exists()
+
+    @mock.patch('license_manager.apps.api.v1.views.send_post_activation_email_task.delay')
+    @mock.patch('license_manager.apps.api.v1.views.LicenseAction.objects.create', side_effect=Exception('db down'))
+    def test_activation_succeeds_when_audit_write_fails(self, mock_create_action, mock_send_post_activation_email_task):
+        self._assign_learner_roles(
+            jwt_payload_extra={
+                'user_id': self.lms_user_id,
+                'email': self.user.email,
+                'subscription_uuid': str(self.active_subscription_for_customer.uuid),
+            }
+        )
+        license_to_be_activated = self._create_license()
+
+        with self.assertLogs(level='ERROR') as log:
+            response = self._post_request(str(self.activation_key))
+
+        assert status.HTTP_200_OK == response.status_code
+        license_to_be_activated.refresh_from_db()
+        assert constants.ACTIVATED == license_to_be_activated.status
+        assert mock_create_action.called
+        assert 'Failed to write activated LicenseAction' in ' '.join(log.output)
+        mock_send_post_activation_email_task.assert_called_once()
 
     # pylint: disable=unused-argument
     @mock.patch('license_manager.apps.api.v1.views.send_post_activation_email_task.delay')

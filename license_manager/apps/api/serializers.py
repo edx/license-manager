@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator
 from django.db.models import Q
 from rest_framework import serializers
@@ -18,6 +19,7 @@ from license_manager.apps.subscriptions.exceptions import (
 from license_manager.apps.subscriptions.models import (
     CustomerAgreement,
     License,
+    LicenseAction,
     SubscriptionPlan,
     SubscriptionPlanRenewal,
 )
@@ -547,6 +549,80 @@ class AdminLicenseSerializer(serializers.ModelSerializer):
             'subscription_plan_expiration_date',
             'subscription_plan',
         ]
+
+
+class LicenseActionListSerializer(serializers.ListSerializer):  # pylint: disable=abstract-method
+    """
+    Resolves the actors for a page of ``LicenseAction`` records with a single query.
+    """
+
+    def to_representation(self, data):
+        actions = list(data)
+        actor_ids = {action.actor_lms_user_id for action in actions if action.actor_lms_user_id is not None}
+        self.context['actors_by_id'] = get_user_model().objects.in_bulk(actor_ids)
+        return super().to_representation(actions)
+
+
+class LicenseActionSerializer(serializers.ModelSerializer):
+    """
+    Read-only serializer for ``LicenseAction`` audit records, for enterprise admins.
+    """
+    # Only these metadata keys are exposed; others (e.g. idempotency keys, learner external keys)
+    # are internal or learner-identifying.
+    ALLOWED_METADATA_KEYS = (
+        'original_status',
+        'is_auto_renewed',
+        'prior_subscription_plan_uuid',
+        'renewed_subscription_plan_uuid',
+        'original_license_uuid',
+        'batch_size',
+        'requested_email_count',
+        'auto_applied',
+    )
+
+    license_uuid = serializers.UUIDField(
+        source='license_id',
+        help_text='The license this action was performed on. The license may since have been deleted.',
+    )
+    actor = SerializerMethodField(
+        help_text='Email and full name of the user who performed the action, or null if not resolvable.',
+    )
+    metadata = SerializerMethodField(
+        help_text='Allowlisted audit metadata for this action.',
+    )
+
+    class Meta:
+        model = LicenseAction
+        list_serializer_class = LicenseActionListSerializer
+        fields = [
+            'uuid',
+            'created',
+            'action_type',
+            'actor_type',
+            'actor',
+            'source',
+            'license_uuid',
+            'learner_email',
+            'correlation_id',
+            'metadata',
+        ]
+        read_only_fields = fields
+
+    def get_actor(self, action):
+        """
+        ``actor_lms_user_id`` holds the license-manager ``User`` primary key of the actor
+        (writers populate it from ``request.user.id``), so it is resolved against the local user table.
+        """
+        user = self.context.get('actors_by_id', {}).get(action.actor_lms_user_id)
+        if not user:
+            return None
+        return {
+            'email': user.email or None,
+            'full_name': user.get_full_name() or None,
+        }
+
+    def get_metadata(self, action):
+        return {key: value for key, value in action.metadata.items() if key in self.ALLOWED_METADATA_KEYS}
 
 
 # Action Serializers

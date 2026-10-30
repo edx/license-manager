@@ -1376,9 +1376,20 @@ class License(TimeStampedModel):
 
     def clear_historical_pii(self):
         """
-        Helper function to remove pii (user_email & lms_user_id) from the license's historical records.
+        Helper function to remove pii (user_email & lms_user_id) from the license's historical records,
+        including the learner identifiers on its ``LicenseAction`` audit rows. The audit rows themselves are kept.
         """
         self.history.update(user_email=None)  # pylint: disable=no-member
+        actions = list(self.actions.all())  # pylint: disable=no-member
+        for action in actions:
+            action.learner_email = None
+            action.learner_lms_user_id = None
+            action.learner_external_key = None
+            action.metadata.pop('learner_external_key', None)
+        LicenseAction.objects.bulk_update(
+            actions,
+            ['learner_email', 'learner_lms_user_id', 'learner_external_key', 'metadata'],
+        )
 
     def reset_to_unassigned(self):
         """

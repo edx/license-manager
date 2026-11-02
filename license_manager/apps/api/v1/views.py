@@ -2,7 +2,7 @@ import logging
 from collections import OrderedDict
 from contextlib import suppress
 from typing import Literal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from celery import chain
 from django.conf import settings
@@ -11,6 +11,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import DatabaseError, transaction
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
+from django.utils.functional import cached_property
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from edx_rbac.decorators import permission_required
@@ -24,7 +25,7 @@ from edx_rest_framework_extensions.auth.jwt.authentication import (
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import action
-from rest_framework.exceptions import ParseError, ValidationError
+from rest_framework.exceptions import NotFound, ParseError, ValidationError
 from rest_framework.mixins import ListModelMixin
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -32,7 +33,7 @@ from rest_framework.views import APIView
 from rest_framework_csv.renderers import CSVRenderer
 
 from license_manager.apps.api import serializers, utils
-from license_manager.apps.api.filters import LicenseFilter
+from license_manager.apps.api.filters import LicenseActionFilter, LicenseFilter
 from license_manager.apps.api.mixins import UserDetailsFromJwtMixin
 from license_manager.apps.api.models import BulkEnrollmentJob
 from license_manager.apps.api.permissions import CanRetireUser
@@ -95,6 +96,32 @@ ESTIMATED_COUNT_PAGINATOR_THRESHOLD = 10000
 SUBSCRIPTION_PLAN_RENEWAL_PROVISIONING_ADMIN_CRUD_API_TAG = "Subscription Plan Renewal CRUD (for Provisioning Admins)"
 SUBSCRIPTION_PLAN_PROVISIONING_ADMIN_CRUD_API_TAG = "Subscription Plan CRUD (for Provisioning Admins)"
 CUSTOMER_AGREEMENT_PROVISIONING_ADMIN_CRUD_API_TAG = "Customer Agreement CRUD (for Provisioning Admins)"
+
+
+def _record_license_activated(user_license, actor_lms_user_id, metadata=None):
+    """
+    Writes an ``activated`` LicenseAction for a learner-initiated activation.
+    As with the assignment and revocation audit writers, a failed audit write
+    is logged and does not block the activation itself.
+    """
+    try:
+        LicenseAction.objects.create(
+            license=user_license,
+            subscription_plan=user_license.subscription_plan,
+            enterprise_customer_uuid=user_license.subscription_plan.enterprise_customer_uuid,
+            action_type=constants.LicenseActionType.ACTIVATED,
+            actor_type=constants.LicenseActorType.LEARNER,
+            actor_lms_user_id=actor_lms_user_id,
+            learner_lms_user_id=user_license.lms_user_id,
+            learner_email=user_license.user_email,
+            source=constants.LicenseActionSource.API,
+            metadata=metadata or {},
+        )
+    except Exception:  # pylint: disable=broad-except
+        logger.exception(
+            'Failed to write activated LicenseAction for license %s; continuing activation flow.',
+            user_license.uuid,
+        )
 
 
 @extend_schema_view(
@@ -203,6 +230,7 @@ class CustomerAgreementViewSet(
         auto_applied_license.auto_applied = True
 
         auto_applied_license.save()
+        _record_license_activated(auto_applied_license, self.request.user.id, metadata={'auto_applied': True})
         event_utils.track_license_changes([auto_applied_license], constants.SegmentEvents.LICENSE_ACTIVATED)
         event_utils.identify_braze_alias(lms_user_id, user_email)
         send_utilization_threshold_reached_email_task.delay(subscription_plan.uuid)
@@ -1618,6 +1646,47 @@ class LicenseAdminViewSet(BaseLicenseViewSet):
         return Response(csv_data, status=status.HTTP_200_OK, content_type='text/csv')
 
 
+class LicenseActionViewSet(PermissionRequiredMixin, ListModelMixin, viewsets.GenericViewSet):
+    """
+    Viewset for enterprise admins to read the audit history (``LicenseAction`` records) of a subscription plan.
+
+    Example request:
+    GET /api/v1/subscriptions/{subscription_plan_uuid}/audit-history/
+    """
+    authentication_classes = [JwtAuthentication, SessionAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    permission_required = constants.SUBSCRIPTIONS_ADMIN_ACCESS_PERMISSION
+
+    serializer_class = serializers.LicenseActionSerializer
+    pagination_class = LicensePagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = LicenseActionFilter
+
+    @cached_property
+    def subscription_plan(self):
+        """
+        The plan identified by ``subscription_uuid``. Malformed or unknown UUIDs result in a 404.
+        """
+        try:
+            subscription_uuid = UUID(self.kwargs['subscription_uuid'])
+        except ValueError as exc:
+            raise NotFound() from exc
+        return get_object_or_404(
+            SubscriptionPlan.objects.select_related('customer_agreement'),
+            uuid=subscription_uuid,
+        )
+
+    def get_permission_object(self):
+        """
+        Admins may only read the audit history of plans belonging to an enterprise they administer.
+        """
+        return str(self.subscription_plan.customer_agreement.enterprise_customer_uuid)
+
+    def get_queryset(self):
+        # ``license`` is deliberately not joined: rows for since-deleted licenses must still be returned.
+        return LicenseAction.objects.filter(subscription_plan=self.subscription_plan).order_by('-created', '-uuid')
+
+
 class LicenseBaseView(UserDetailsFromJwtMixin, APIView):
     """
     Base view for creating specific, one-off views
@@ -1919,6 +1988,7 @@ class LicenseActivationView(LicenseBaseView):
 
         if user_license.status == constants.ASSIGNED:
             user_license.activate(self.lms_user_id)
+            _record_license_activated(user_license, request.user.id)
             self._track_and_notify(user_license)
 
         # There's an implied logical branch where the license is already activated

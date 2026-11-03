@@ -1500,6 +1500,9 @@ class CustomerAgreementViewSetTests(LicenseViewSetActionMixin, TestCase):
         for _ in range(7):
             self.api_client.post(self.auto_apply_url)
         assert License.objects.filter(user_email=user_email).count() == 1
+        assert LicenseAction.objects.filter(
+            subscription_plan=plan, action_type=constants.LicenseActionType.ACTIVATED,
+        ).count() == 1
 
         # Check whether tasks were run
         mock_send_assignment_email_task.assert_called_once_with(
@@ -1583,6 +1586,16 @@ class CustomerAgreementViewSetTests(LicenseViewSetActionMixin, TestCase):
 
         # Check if 1 License has become auto_applied
         assert plan.licenses.filter(auto_applied=True).count() == 1
+
+        # Check that the auto-applied activation was audited as a learner action
+        action = LicenseAction.objects.get(subscription_plan=plan)
+        assert str(action.license_id) == response_json['uuid']
+        assert action.action_type == constants.LicenseActionType.ACTIVATED
+        assert action.actor_type == constants.LicenseActorType.LEARNER
+        assert action.actor_lms_user_id == self.super_user.id
+        assert action.learner_email == self.super_user.email
+        assert action.source == constants.LicenseActionSource.API
+        assert action.metadata == {'auto_applied': True}
 
         # Check whether tasks were run
         mock_send_assignment_email_task.assert_called_once_with(
@@ -4075,6 +4088,41 @@ class UserRetirementViewTests(TestCase):
         for _license in (self.revoked_license, self.assigned_license, self.activated_license):
             with self.assertRaises(SubscriptionLicenseSource.DoesNotExist):
                 _license.source  # pylint: disable=pointless-statement
+
+    def test_retirement_clears_license_action_pii(self):
+        """
+        LicenseAction audit rows for the retired user's licenses keep the event but lose learner identifiers.
+        """
+        def create_action(license_obj, email, lms_user_id):
+            return LicenseAction.objects.create(
+                license=license_obj,
+                subscription_plan=license_obj.subscription_plan,
+                enterprise_customer_uuid=license_obj.subscription_plan.enterprise_customer_uuid,
+                action_type=constants.LicenseActionType.ASSIGNED,
+                actor_type=constants.LicenseActorType.ADMIN,
+                source=constants.LicenseActionSource.ADMIN_API_BULK,
+                learner_email=email,
+                learner_lms_user_id=lms_user_id,
+                learner_external_key='sf-123',
+                metadata={'batch_size': 1, 'learner_external_key': 'sf-123'},
+            )
+
+        retired_user_action = create_action(self.activated_license, self.user_email, self.lms_user_id)
+        other_user_action = create_action(LicenseFactory.create(), 'other@example.com', self.lms_user_id + 1)
+
+        response = self._post_request(self.lms_user_id, self.original_username)
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+
+        retired_user_action.refresh_from_db()
+        assert retired_user_action.learner_email is None
+        assert retired_user_action.learner_lms_user_id is None
+        assert retired_user_action.learner_external_key is None
+        assert retired_user_action.metadata == {'batch_size': 1}
+        assert retired_user_action.action_type == constants.LicenseActionType.ASSIGNED
+
+        other_user_action.refresh_from_db()
+        assert other_user_action.learner_email == 'other@example.com'
+        assert other_user_action.metadata == {'batch_size': 1, 'learner_external_key': 'sf-123'}
 
 
 class StaffLicenseLookupViewTests(LicenseViewTestMixin, TestCase):

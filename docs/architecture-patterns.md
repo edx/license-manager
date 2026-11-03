@@ -149,6 +149,13 @@ Renewal processing is time-sensitive:
 - Account for grace periods in business logic
 - Test edge cases around midnight boundaries
 
+### `request.user.id` Is Not an LMS User Id
+
+license-manager's `core.User` has no LMS user id, and `JWT_AUTH` doesn't map the JWT `user_id` claim onto it,
+so `request.user.id` is the local primary key. Use `UserDetailsFromJwtMixin.lms_user_id` (or the JWT `user_id`)
+when an LMS id is needed. `LicenseAction.actor_lms_user_id` is populated from `request.user.id` despite its name;
+see `docs/references/license_audit_trail.rst`.
+
 ## Future Considerations
 
 This section should be updated as new patterns emerge or architectural decisions are made.

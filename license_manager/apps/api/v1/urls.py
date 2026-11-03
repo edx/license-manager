@@ -103,6 +103,12 @@ subscription_router.register(
     basename='license',
 )
 
+subscription_router.register(
+    r'audit-history',
+    views.LicenseActionViewSet,
+    basename='audit-history',
+)
+
 urlpatterns = [
     re_path(
         r'bulk-license-enrollment',

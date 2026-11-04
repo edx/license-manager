@@ -4,7 +4,7 @@
 #
 #    make upgrade
 #
-amqp==5.4.1
+amqp==5.4.2
     # via
     #   -r requirements/base.txt
     #   kombu
@@ -29,17 +29,17 @@ backoff==1.10.0
     # via
     #   -r requirements/base.txt
     #   analytics-python
-billiard==4.3.1
+billiard==4.3.2
     # via
     #   -r requirements/base.txt
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/base.txt
-boto3==1.43.122
+boto3==1.43.123
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.43.122
+botocore==1.43.123
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -93,7 +93,7 @@ code-annotations==3.0.0
     #   -r requirements/test.in
     #   edx-lint
     #   edx-toggles
-coverage[toml]==7.17.0
+coverage[toml]==7.17.1
     # via
     #   -r requirements/test.in
     #   pytest-cov
@@ -187,7 +187,7 @@ djangorestframework==3.18.3
     #   edx-drf-extensions
 djangorestframework-csv==3.0.2
     # via -r requirements/base.txt
-dnspython==2.9.1
+dnspython==2.9.2
     # via
     #   -r requirements/base.txt
     #   pymongo
@@ -271,7 +271,7 @@ jsonschema-specifications==2025.9.1
     # via
     #   -r requirements/base.txt
     #   jsonschema
-kombu==5.6.2
+kombu==5.7.0
     # via
     #   -r requirements/base.txt
     #   celery
@@ -285,21 +285,18 @@ monotonic==1.6
     # via
     #   -r requirements/base.txt
     #   analytics-python
-mypy-extensions==1.1.0
+mypy-extensions==1.2.0
     # via isort
 mysqlclient==2.3.0
     # via -r requirements/base.txt
-oauthlib==4.0.0
+oauthlib==4.0.1
     # via
     #   -r requirements/base.txt
     #   requests-oauthlib
     #   social-auth-core
 packaging==26.3
-    # via
-    #   -r requirements/base.txt
-    #   kombu
-    #   pytest
-platformdirs==4.14.0
+    # via pytest
+platformdirs==4.14.3
     # via pylint
 pluggy==1.7.0
     # via
@@ -440,7 +437,7 @@ social-auth-core==4.9.1
     #   -r requirements/base.txt
     #   edx-auth-backends
     #   social-auth-app-django
-sqlparse==0.6.0
+sqlparse==0.6.1
     # via
     #   -r requirements/base.txt
     #   django
@@ -469,9 +466,7 @@ typing-extensions==4.16.0
     #   edx-opaque-keys
     #   referencing
 tzdata==2026.6
-    # via
-    #   -r requirements/base.txt
-    #   kombu
+    # via -r requirements/base.txt
 tzlocal==5.4.5
     # via
     #   -r requirements/base.txt

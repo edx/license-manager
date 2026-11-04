@@ -4,7 +4,7 @@
 #
 #    make upgrade
 #
-amqp==5.4.1
+amqp==5.4.2
     # via
     #   -r requirements/base.txt
     #   kombu
@@ -25,17 +25,17 @@ backoff==1.10.0
     # via
     #   -r requirements/base.txt
     #   analytics-python
-billiard==4.3.1
+billiard==4.3.2
     # via
     #   -r requirements/base.txt
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/base.txt
-boto3==1.43.122
+boto3==1.43.123
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.43.122
+botocore==1.43.123
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -93,7 +93,7 @@ defusedxml==0.7.1
     #   -r requirements/base.txt
     #   python3-openid
     #   social-auth-core
-django==5.2.18
+django==5.2.19
     # via
     #   -c requirements/common_constraints.txt
     #   -r requirements/base.txt
@@ -168,7 +168,7 @@ djangorestframework==3.18.3
     #   edx-drf-extensions
 djangorestframework-csv==3.0.2
     # via -r requirements/base.txt
-dnspython==2.9.1
+dnspython==2.9.2
     # via
     #   -r requirements/base.txt
     #   pymongo
@@ -246,7 +246,7 @@ jsonschema-specifications==2025.9.1
     # via
     #   -r requirements/base.txt
     #   jsonschema
-kombu==5.6.2
+kombu==5.7.0
     # via
     #   -r requirements/base.txt
     #   celery
@@ -260,15 +260,11 @@ monotonic==1.6
     #   analytics-python
 mysqlclient==2.3.0
     # via -r requirements/base.txt
-oauthlib==4.0.0
+oauthlib==4.0.1
     # via
     #   -r requirements/base.txt
     #   requests-oauthlib
     #   social-auth-core
-packaging==26.3
-    # via
-    #   -r requirements/base.txt
-    #   kombu
 ply==3.11
     # via
     #   -r requirements/base.txt
@@ -383,7 +379,7 @@ social-auth-core==4.9.1
     #   -r requirements/base.txt
     #   edx-auth-backends
     #   social-auth-app-django
-sqlparse==0.6.0
+sqlparse==0.6.1
     # via
     #   -r requirements/base.txt
     #   django
@@ -407,10 +403,6 @@ typing-extensions==4.16.0
     #   click-repl
     #   edx-opaque-keys
     #   referencing
-tzdata==2026.6
-    # via
-    #   -r requirements/base.txt
-    #   kombu
 tzlocal==5.4.5
     # via
     #   -r requirements/base.txt

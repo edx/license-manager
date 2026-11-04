@@ -581,6 +581,8 @@ typing-extensions==4.16.0
     #   edx-opaque-keys
     #   referencing
     #   typeguard
+tzdata==2026.6
+    # via -r requirements/validation.txt
 tzlocal==5.4.5
     # via
     #   -r requirements/validation.txt

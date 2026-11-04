@@ -650,6 +650,10 @@ typing-extensions==4.16.0
     #   click-repl
     #   edx-opaque-keys
     #   referencing
+tzdata==2026.6
+    # via
+    #   -r requirements/quality.txt
+    #   -r requirements/test.txt
 tzlocal==5.4.5
     # via
     #   -r requirements/quality.txt

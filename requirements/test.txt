@@ -35,16 +35,16 @@ billiard==4.3.2
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/base.txt
-boto3==1.43.123
+boto3==1.44.0
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.43.123
+botocore==1.44.0
     # via
     #   -r requirements/base.txt
     #   boto3
     #   s3transfer
-celery==5.6.3
+celery==5.7.0
     # via
     #   -r requirements/base.txt
     #   django-celery-results
@@ -62,7 +62,7 @@ charset-normalizer==3.5.2
     # via
     #   -r requirements/base.txt
     #   requests
-click==8.5.0
+click==8.5.1
     # via
     #   -r requirements/base.txt
     #   celery
@@ -93,7 +93,7 @@ code-annotations==3.0.0
     #   -r requirements/test.in
     #   edx-lint
     #   edx-toggles
-coverage[toml]==7.17.1
+coverage[toml]==7.17.2
     # via
     #   -r requirements/test.in
     #   pytest-cov
@@ -199,13 +199,13 @@ drf-nested-routers==0.95.3
     # via -r requirements/base.txt
 drf-spectacular==0.30.0
     # via -r requirements/base.txt
-edx-auth-backends==5.1.0
+edx-auth-backends==5.1.1
     # via -r requirements/base.txt
 edx-braze-client==0.2.5
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/base.txt
-edx-celeryutils==2.0.0
+edx-celeryutils==2.1.0
     # via -r requirements/base.txt
 edx-django-utils==8.1.0
     # via
@@ -214,7 +214,7 @@ edx-django-utils==8.1.0
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   edx-toggles
-edx-drf-extensions==10.10.0
+edx-drf-extensions==10.11.0
     # via
     #   -r requirements/base.txt
     #   edx-rbac
@@ -224,9 +224,9 @@ edx-opaque-keys==4.0.1
     # via
     #   -r requirements/base.txt
     #   edx-drf-extensions
-edx-rbac==3.0.0
+edx-rbac==3.1.0
     # via -r requirements/base.txt
-edx-rest-api-client==7.1.0
+edx-rest-api-client==7.1.2
     # via -r requirements/base.txt
 edx-toggles==6.0.0
     # via
@@ -234,7 +234,7 @@ edx-toggles==6.0.0
     #   edx-auth-backends
 factory-boy==3.3.3
     # via -r requirements/test.in
-faker==40.44.0
+faker==40.54.0
     # via factory-boy
 freezegun==1.5.5
     # via -r requirements/test.in
@@ -287,7 +287,7 @@ monotonic==1.6
     #   analytics-python
 mypy-extensions==1.2.0
     # via isort
-mysqlclient==2.3.0
+mysqlclient==2.3.1
     # via -r requirements/base.txt
 oauthlib==4.0.1
     # via
@@ -296,7 +296,7 @@ oauthlib==4.0.1
     #   social-auth-core
 packaging==26.3
     # via pytest
-platformdirs==4.14.3
+platformdirs==4.14.5
     # via pylint
 pluggy==1.7.0
     # via
@@ -414,7 +414,7 @@ semantic-version==2.10.0
     # via
     #   -r requirements/base.txt
     #   edx-drf-extensions
-simplejson==4.2.0
+simplejson==4.3.0
     # via -r requirements/base.txt
 six==1.17.0
     # via

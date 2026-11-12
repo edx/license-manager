@@ -25,13 +25,13 @@ billiard==4.3.2
     # via celery
 bleach[css]==6.4.0
     # via -r requirements/base.in
-boto3==1.43.123
+boto3==1.44.0
     # via django-ses
-botocore==1.43.123
+botocore==1.44.0
     # via
     #   boto3
     #   s3transfer
-celery==5.6.3
+celery==5.7.0
     # via
     #   -r requirements/base.in
     #   django-celery-results
@@ -44,7 +44,7 @@ cffi==2.1.1
     #   pynacl
 charset-normalizer==3.5.2
     # via requests
-click==8.5.0
+click==8.5.1
     # via
     #   celery
     #   click-didyoumean
@@ -150,13 +150,13 @@ drf-nested-routers==0.95.3
     # via -r requirements/base.in
 drf-spectacular==0.30.0
     # via -r requirements/base.in
-edx-auth-backends==5.1.0
+edx-auth-backends==5.1.1
     # via -r requirements/base.in
 edx-braze-client==0.2.5
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/base.in
-edx-celeryutils==2.0.0
+edx-celeryutils==2.1.0
     # via -r requirements/base.in
 edx-django-utils==8.1.0
     # via
@@ -165,15 +165,15 @@ edx-django-utils==8.1.0
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   edx-toggles
-edx-drf-extensions==10.10.0
+edx-drf-extensions==10.11.0
     # via
     #   -r requirements/base.in
     #   edx-rbac
 edx-opaque-keys==4.0.1
     # via edx-drf-extensions
-edx-rbac==3.0.0
+edx-rbac==3.1.0
     # via -r requirements/base.in
-edx-rest-api-client==7.1.0
+edx-rest-api-client==7.1.2
     # via -r requirements/base.in
 edx-toggles==6.0.0
     # via
@@ -201,7 +201,7 @@ markupsafe==3.0.4
     # via jinja2
 monotonic==1.6
     # via analytics-python
-mysqlclient==2.3.0
+mysqlclient==2.3.1
     # via -r requirements/base.in
 oauthlib==4.0.1
     # via
@@ -266,7 +266,7 @@ s3transfer==0.19.3
     # via boto3
 semantic-version==2.10.0
     # via edx-drf-extensions
-simplejson==4.2.0
+simplejson==4.3.0
     # via -r requirements/base.in
 six==1.17.0
     # via

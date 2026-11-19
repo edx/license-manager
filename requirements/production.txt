@@ -31,11 +31,11 @@ billiard==4.3.2
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/base.txt
-boto3==1.44.3
+boto3==1.44.5
     # via
     #   -r requirements/base.txt
     #   django-ses
-botocore==1.44.3
+botocore==1.44.5
     # via
     #   -r requirements/base.txt
     #   boto3
@@ -258,8 +258,10 @@ monotonic==1.6
     # via
     #   -r requirements/base.txt
     #   analytics-python
-mysqlclient==2.3.1
-    # via -r requirements/base.txt
+mysqlclient==2.3.0
+    # via
+    #   -c requirements/common_constraints.txt
+    #   -r requirements/base.txt
 oauthlib==4.0.1
     # via
     #   -r requirements/base.txt
@@ -307,7 +309,7 @@ python-dateutil==2.9.0.post0
     #   celery
 python-memcached==1.62
     # via -r requirements/production.in
-python-slugify==9.1.3
+python-slugify==9.2.0
     # via
     #   -r requirements/base.txt
     #   code-annotations

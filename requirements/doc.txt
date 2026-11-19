@@ -46,11 +46,11 @@ billiard==4.3.2
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/test.txt
-boto3==1.44.3
+boto3==1.44.5
     # via
     #   -r requirements/test.txt
     #   django-ses
-botocore==1.44.3
+botocore==1.44.5
     # via
     #   -r requirements/test.txt
     #   boto3
@@ -242,7 +242,7 @@ edx-drf-extensions==10.11.0
     # via
     #   -r requirements/test.txt
     #   edx-rbac
-edx-lint==6.3.0
+edx-lint==6.3.1
     # via -r requirements/test.txt
 edx-opaque-keys==4.0.1
     # via
@@ -325,9 +325,11 @@ mypy-extensions==1.2.0
     # via
     #   -r requirements/test.txt
     #   isort
-mysqlclient==2.3.1
-    # via -r requirements/test.txt
-nh3==0.3.7
+mysqlclient==2.3.0
+    # via
+    #   -c requirements/common_constraints.txt
+    #   -r requirements/test.txt
+nh3==0.3.8
     # via readme-renderer
 oauthlib==4.0.1
     # via
@@ -339,7 +341,7 @@ packaging==26.3
     #   -r requirements/test.txt
     #   pytest
     #   sphinx
-platformdirs==4.14.5
+platformdirs==4.14.7
     # via
     #   -r requirements/test.txt
     #   pylint
@@ -383,7 +385,7 @@ pyjwt[crypto]==2.15.1
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   social-auth-core
-pylint==4.1.3
+pylint==4.1.4
     # via
     #   -r requirements/test.txt
     #   edx-lint
@@ -427,7 +429,7 @@ python-dateutil==2.9.0.post0
     #   botocore
     #   celery
     #   freezegun
-python-slugify==9.1.3
+python-slugify==9.2.0
     # via
     #   -r requirements/test.txt
     #   code-annotations
@@ -509,7 +511,7 @@ social-auth-core==4.9.1
     #   -r requirements/test.txt
     #   edx-auth-backends
     #   social-auth-app-django
-soupsieve==4.1
+soupsieve==4.1.1
     # via beautifulsoup4
 sphinx==9.1.1
     # via

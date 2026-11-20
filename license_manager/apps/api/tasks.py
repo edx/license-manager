@@ -22,6 +22,7 @@ from license_manager.apps.api_client.braze import BrazeApiClient
 from license_manager.apps.api_client.enterprise import EnterpriseApiClient
 from license_manager.apps.subscriptions.constants import (
     ACTIVATED,
+    ASSIGNED,
     ASSIGNMENT_EMAIL_BATCH_SIZE,
     DAYS_BEFORE_INITIAL_UTILIZATION_EMAIL_SENT,
     ENTERPRISE_BRAZE_ALIAS_LABEL,
@@ -402,6 +403,37 @@ def revoke_course_enrollments_for_user_task(user_id, enterprise_id):
         )
 
 
+@shared_task(base=LoggedTask, soft_time_limit=SOFT_TIME_LIMIT, time_limit=MAX_TIME_LIMIT)
+def revoke_course_enrollments_for_license_task(license_uuid):
+    """
+    Terminates (moves to audit, or unenrolls) only the licensed course enrollments tied to
+    the given license_uuid.
+
+    Used when revoking an ASSIGNED (pending) license: bulk enrollment can enroll learners
+    against a pending license, and the learner may have no ``lms_user_id`` recorded on the
+    license yet. Scoping by license_uuid also guarantees that enrollments the learner holds
+    under any *other* license are left untouched.
+
+    Arguments:
+        license_uuid (str): The UUID of the revoked license
+    """
+    try:
+        enterprise_api_client = EnterpriseApiClient()
+        enterprise_api_client.bulk_licensed_enrollments_expiration(expired_license_uuids=[license_uuid])
+        logger.info(
+            'Revocation of course enrollments SUCCEEDED for license [{license_uuid}]'.format(
+                license_uuid=license_uuid,
+            )
+        )
+    except Exception:  # pylint: disable=broad-except
+        logger.error(
+            'Revocation of course enrollments FAILED for license [{license_uuid}]'.format(
+                license_uuid=license_uuid,
+            ),
+            exc_info=True,
+        )
+
+
 def execute_post_revocation_tasks(
     revoked_license,
     original_status,
@@ -415,7 +447,8 @@ def execute_post_revocation_tasks(
     Executes a set of tasks after a license has been revoked.
 
     Tasks:
-        - Revoke enrollments if the License has an original status of ACTIVATED.
+        - Revoke enrollments if the License has an original status of ACTIVATED (user-scoped)
+          or ASSIGNED (scoped to the revoked license_uuid).
         - Send email notification to ECS if the Subscription Plan has reached its revocation cap.
     """
     action_metadata = {
@@ -461,12 +494,19 @@ def execute_post_revocation_tasks(
             revoked_license.uuid,
         )
 
-    # We should only need to revoke enrollments if the License has an original
-    # status of ACTIVATED, pending users shouldn't have any enrollments.
     if original_status == ACTIVATED:
+        # User-scoped revocation: also catches enrollments made under a prior (renewed)
+        # license of this learner, since renewal mints a new license UUID.
         revoke_course_enrollments_for_user_task.delay(
             user_id=revoked_license.lms_user_id,
             enterprise_id=str(revoked_license.subscription_plan.enterprise_customer_uuid),
+        )
+    elif original_status == ASSIGNED:
+        # Pending licenses can still carry enrollments (e.g. via admin Bulk Enrollment).
+        # Scope by license_uuid: the learner may have no lms_user_id yet, and we must not
+        # touch enrollments the learner holds under a different license.
+        revoke_course_enrollments_for_license_task.delay(
+            license_uuid=str(revoked_license.uuid),
         )
 
     if not revoked_license.subscription_plan.has_revocations_remaining:

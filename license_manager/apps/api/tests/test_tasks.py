@@ -770,12 +770,14 @@ class RevokeAllLicensesTaskTests(TestCase):
         {'original_status': constants.ASSIGNED, 'revoke_max_percentage': 100}
     )
     @ddt.unpack
+    @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_license_task.delay')
     @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
     @mock.patch('license_manager.apps.api.tasks.send_revocation_cap_notification_email_task.delay')
     def test_execute_post_revocation_tasks(
         self,
         mock_cap_email_delay,
-        mock_revoke_enrollments_delay,
+        mock_revoke_user_enrollments_delay,
+        mock_revoke_license_enrollments_delay,
         original_status,
         revoke_max_percentage
     ):
@@ -800,10 +802,22 @@ class RevokeAllLicensesTaskTests(TestCase):
             revocation_result = revoke_license(original_license)
             tasks.execute_post_revocation_tasks(**revocation_result)
 
-        is_license_revoked = original_status == constants.ACTIVATED
-        revoke_limit_reached = is_license_revoked and revoke_max_percentage <= 100
+        was_activated = original_status == constants.ACTIVATED
+        revoke_limit_reached = was_activated and revoke_max_percentage <= 100
 
-        self.assertEqual(mock_revoke_enrollments_delay.called, is_license_revoked)
+        # ACTIVATED -> user-scoped unenrollment (existing behavior preserved).
+        # ASSIGNED  -> license-scoped unenrollment (ENT-12360).
+        if was_activated:
+            mock_revoke_user_enrollments_delay.assert_called_once_with(
+                user_id=123,
+                enterprise_id=str(agreement.enterprise_customer_uuid),
+            )
+            mock_revoke_license_enrollments_delay.assert_not_called()
+        else:
+            mock_revoke_license_enrollments_delay.assert_called_once_with(
+                license_uuid=str(original_license.uuid),
+            )
+            mock_revoke_user_enrollments_delay.assert_not_called()
         self.assertEqual(mock_cap_email_delay.called, revoke_limit_reached)
 
         action = LicenseAction.objects.get(license=original_license)
@@ -811,6 +825,94 @@ class RevokeAllLicensesTaskTests(TestCase):
         assert action.actor_type == constants.LicenseActorType.SYSTEM
         assert action.source == constants.LicenseActionSource.CELERY_TASK
         assert action.metadata['original_status'] == original_status
+
+    @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_license_task.delay')
+    @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
+    def test_execute_post_revocation_tasks_pending_license_without_lms_user_id(
+        self,
+        mock_revoke_user_enrollments_delay,
+        mock_revoke_license_enrollments_delay,
+    ):
+        """
+        A pending (ASSIGNED) license whose learner has no lms_user_id recorded must still
+        trigger unenrollment, keyed by the license_uuid rather than a user id.
+        """
+        original_license = LicenseFactory.create(
+            status=constants.ASSIGNED,
+            subscription_plan=SubscriptionPlanFactory.create(),
+            lms_user_id=None,
+        )
+
+        revocation_result = revoke_license(original_license)
+        tasks.execute_post_revocation_tasks(**revocation_result)
+
+        mock_revoke_license_enrollments_delay.assert_called_once_with(
+            license_uuid=str(original_license.uuid),
+        )
+        mock_revoke_user_enrollments_delay.assert_not_called()
+
+    @ddt.data(constants.REVOKED, constants.UNASSIGNED)
+    @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_license_task.delay')
+    @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
+    def test_non_revocable_license_does_not_trigger_unenrollment(
+        self,
+        license_status,
+        mock_revoke_user_enrollments_delay,
+        mock_revoke_license_enrollments_delay,
+    ):
+        """
+        Revoking an already-REVOKED (or otherwise non-revocable) license is rejected by
+        revoke_license, and post-revocation tasks invoked with such a status do not trigger
+        any unenrollment.
+        """
+        original_license = LicenseFactory.create(
+            status=license_status,
+            subscription_plan=SubscriptionPlanFactory.create(),
+            lms_user_id=123,
+        )
+
+        with self.assertRaises(LicenseRevocationError):
+            revoke_license(original_license)
+
+        tasks.execute_post_revocation_tasks(
+            revoked_license=original_license,
+            original_status=license_status,
+        )
+
+        mock_revoke_user_enrollments_delay.assert_not_called()
+        mock_revoke_license_enrollments_delay.assert_not_called()
+
+    @mock.patch('license_manager.apps.api.tasks.EnterpriseApiClient')
+    def test_revoke_course_enrollments_for_license_task(self, mock_enterprise_client):
+        """
+        The license-scoped task asks edx-enterprise to terminate only the enrollments
+        tied to the given license_uuid.
+        """
+        license_uuid = str(uuid4())
+
+        tasks.revoke_course_enrollments_for_license_task(license_uuid=license_uuid)
+
+        mock_enterprise_client.return_value.bulk_licensed_enrollments_expiration.assert_called_once_with(
+            expired_license_uuids=[license_uuid],
+        )
+
+    @mock.patch('license_manager.apps.api.tasks.logger.error')
+    @mock.patch('license_manager.apps.api.tasks.EnterpriseApiClient')
+    def test_revoke_course_enrollments_for_license_task_failure_is_logged(
+        self,
+        mock_enterprise_client,
+        mock_log_error,
+    ):
+        """
+        A downstream failure (e.g. edx-enterprise 422) is logged and does not raise.
+        """
+        license_uuid = str(uuid4())
+        mock_enterprise_client.return_value.bulk_licensed_enrollments_expiration.side_effect = Exception('boom')
+
+        tasks.revoke_course_enrollments_for_license_task(license_uuid=license_uuid)
+
+        mock_log_error.assert_called_once()
+        assert license_uuid in mock_log_error.call_args[0][0]
 
     @mock.patch('license_manager.apps.api.tasks.send_revocation_cap_notification_email_task.delay')
     @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')

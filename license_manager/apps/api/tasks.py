@@ -404,18 +404,11 @@ def revoke_course_enrollments_for_user_task(user_id, enterprise_id):
 
 
 def _get_renewal_chain_license_uuids(license_obj):
-    """
-    Returns the UUIDs (as strings) of the given license and of every license it was
-    renewed from, newest first.
-
-    Renewal copies a license into a new row with a new UUID, while existing licensed course
-    enrollments keep the UUID of the license they were made under.
-    """
+    """Returns the UUIDs of license_obj and every license it was renewed from, newest first."""
     license_uuids = []
-    current = license_obj
-    while current is not None and str(current.uuid) not in license_uuids:
-        license_uuids.append(str(current.uuid))
-        current = current.renewed_from
+    while license_obj:
+        license_uuids.append(str(license_obj.uuid))
+        license_obj = license_obj.renewed_from
     return license_uuids
 
 
@@ -487,15 +480,8 @@ def execute_post_revocation_tasks(
             enterprise_id=str(revoked_license.subscription_plan.enterprise_customer_uuid),
         )
     elif original_status == ASSIGNED:
-        # Pending licenses can still carry enrollments (e.g. via admin Bulk Enrollment).
-        # Scope by license UUID: the learner may have no lms_user_id yet, and we must not
-        # touch enrollments the learner holds under a different license. Include the
-        # licenses this one was renewed from, since their enrollments keep the old UUIDs.
-        # license_expiration_task retries transient edx-enterprise failures; retrying is
-        # safe because already-revoked licensed enrollments are skipped downstream.
-        license_expiration_task.delay(
-            license_uuids=_get_renewal_chain_license_uuids(revoked_license),
-        )
+        # License-scoped, incl. renewal chain: see docs/architecture-patterns.md.
+        license_expiration_task.delay(license_uuids=_get_renewal_chain_license_uuids(revoked_license))
 
     if not revoked_license.subscription_plan.has_revocations_remaining:
         # Send email notification to ECS that the Subscription Plan has reached its revocation cap

@@ -143,27 +143,18 @@ Auto-assignment based on email domains requires careful validation:
 
 ### Course Unenrollment on License Revocation
 
-`execute_post_revocation_tasks` (`apps/api/tasks.py`) picks the edx-enterprise endpoint by the
-license's *original* status (ENT-12360):
+`execute_post_revocation_tasks` (`apps/api/tasks.py`) picks the edx-enterprise endpoint by the license's original status:
 
-- `ACTIVATED` -> `revoke_course_enrollments_for_user_task` -> `licensed-enterprise-course-enrollment/license_revoke/`.
-  This is **user + enterprise scoped**, not license scoped: it terminates every licensed enrollment the
-  learner has in that enterprise. That is intentional, because renewals mint a *new* license UUID while
-  existing enrollments keep the old one.
-- `ASSIGNED` (pending) -> `license_expiration_task` -> `.../bulk_licensed_enrollments_expiration/`
-  with the revoked license's UUID **plus every UUID in its renewal chain** (followed via `License.renewed_from`).
-  Pending licenses can carry enrollments (admin Bulk Enrollment), may have no `lms_user_id` (which
-  `license_revoke` rejects with a 400), and must not touch enrollments the learner holds under another
-  license. The chain matters because renewal copies pending licenses to new UUIDs too, and enrollments keep
-  the UUID they were made under. `license_expiration_task` runs on `LoggedTaskWithRetry`, so transient
-  edx-enterprise failures (including its 422 for partial failure) are retried; this is safe because
-  already-revoked licensed enrollments are skipped downstream.
-- Any other status (for example, already `REVOKED`) triggers no unenrollment, and `revoke_license` raises
-  `LicenseRevocationError` first. If you add a status to `REVOCABLE_LICENSE_STATUSES`, add a matching branch:
-  `test_every_revocable_status_triggers_unenrollment` fails until you do.
+- `ACTIVATED` -> `revoke_course_enrollments_for_user_task` (`license_revoke/`). User + enterprise scoped, so it also
+  catches enrollments made under the learner's earlier (renewed) licenses.
+- `ASSIGNED` -> `license_expiration_task` (`bulk_licensed_enrollments_expiration/`) with the license UUID and every UUID
+  in its `renewed_from` chain. License-scoped because pending licenses often have no `lms_user_id` (`license_revoke`
+  returns 400) and other licenses' enrollments must be left alone. Retries are safe: already-revoked enrollments are skipped.
+  It shares that task with plan expiration, so it logs `Expiration of course enrollments ...`, not `Revocation of ...`.
+- No other status unenrolls. A status added to `REVOCABLE_LICENSE_STATUSES` needs a new branch
+  (`test_unenrollment_queued_only_for_revocable_statuses` enforces this).
 
-Known gap: edx-enterprise `PendingEnrollment` rows (bulk-enrolled learners with no LMS account yet) are not
-cleaned up by either endpoint.
+Known gap: edx-enterprise `PendingEnrollment` rows (learners with no LMS account yet) are not cleaned up by either endpoint.
 
 ### Renewal Processing Timing
 

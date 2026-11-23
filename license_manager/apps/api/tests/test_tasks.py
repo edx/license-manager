@@ -839,16 +839,7 @@ class RevokeAllLicensesTaskTests(TestCase):
         keep the UUID they were made under. Revoking the newest license in the chain must
         send the UUIDs of every license it was renewed from.
         """
-        user_email = 'renewed-pending@example.com'
-        first_license = LicenseFactory.create(
-            status=constants.ASSIGNED, user_email=user_email, subscription_plan=SubscriptionPlanFactory.create(),
-        )
-        second_license = LicenseFactory.create(
-            status=constants.ASSIGNED, user_email=user_email, subscription_plan=SubscriptionPlanFactory.create(),
-        )
-        current_license = LicenseFactory.create(
-            status=constants.ASSIGNED, user_email=user_email, subscription_plan=SubscriptionPlanFactory.create(),
-        )
+        first_license, second_license, current_license = LicenseFactory.create_batch(3, status=constants.ASSIGNED)
         first_license.renewed_to = second_license
         first_license.save()
         second_license.renewed_to = current_license
@@ -861,56 +852,21 @@ class RevokeAllLicensesTaskTests(TestCase):
             license_uuids=[str(current_license.uuid), str(second_license.uuid), str(first_license.uuid)],
         )
 
-    @ddt.data(*constants.REVOCABLE_LICENSE_STATUSES)
+    @ddt.data(*[status for status, _ in constants.LICENSE_STATUS_CHOICES])
     @mock.patch('license_manager.apps.api.tasks.license_expiration_task.delay')
     @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
-    def test_every_revocable_status_triggers_unenrollment(
-        self,
-        license_status,
-        mock_revoke_user_enrollments_delay,
-        mock_license_expiration_delay,
+    def test_unenrollment_queued_only_for_revocable_statuses(
+        self, original_status, mock_revoke_user_enrollments_delay, mock_license_expiration_delay,
     ):
         """
-        Guard: if a status is added to REVOCABLE_LICENSE_STATUSES without a matching branch in
-        execute_post_revocation_tasks, revoking it would silently skip course unenrollment.
+        Every revocable status queues an unenrollment (add a branch when you add one); no other status does.
         """
-        original_license = LicenseFactory.create(
-            status=license_status,
-            subscription_plan=SubscriptionPlanFactory.create(),
-            lms_user_id=123,
-        )
-
-        revocation_result = revoke_license(original_license)
-        tasks.execute_post_revocation_tasks(**revocation_result)
-
-        assert mock_revoke_user_enrollments_delay.called or mock_license_expiration_delay.called
-
-    @ddt.data(constants.REVOKED, constants.UNASSIGNED)
-    @mock.patch('license_manager.apps.api.tasks.license_expiration_task.delay')
-    @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
-    def test_non_revocable_original_status_triggers_no_unenrollment(
-        self,
-        original_status,
-        mock_revoke_user_enrollments_delay,
-        mock_license_expiration_delay,
-    ):
-        """
-        Only ACTIVATED and ASSIGNED licenses can carry licensed enrollments, so any other
-        original status must not queue an unenrollment.
-        """
-        revoked_license = LicenseFactory.create(
-            status=constants.REVOKED,
-            subscription_plan=SubscriptionPlanFactory.create(),
-            lms_user_id=123,
-        )
-
         tasks.execute_post_revocation_tasks(
-            revoked_license=revoked_license,
+            revoked_license=LicenseFactory.create(status=constants.REVOKED, lms_user_id=123),
             original_status=original_status,
         )
-
-        mock_revoke_user_enrollments_delay.assert_not_called()
-        mock_license_expiration_delay.assert_not_called()
+        queued = mock_revoke_user_enrollments_delay.called or mock_license_expiration_delay.called
+        assert queued == (original_status in constants.REVOCABLE_LICENSE_STATUSES)
 
     @mock.patch('license_manager.apps.api.tasks.send_revocation_cap_notification_email_task.delay')
     @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')

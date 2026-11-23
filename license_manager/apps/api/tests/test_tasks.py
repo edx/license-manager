@@ -885,6 +885,33 @@ class RevokeAllLicensesTaskTests(TestCase):
 
         assert mock_revoke_user_enrollments_delay.called or mock_license_expiration_delay.called
 
+    @ddt.data(constants.REVOKED, constants.UNASSIGNED)
+    @mock.patch('license_manager.apps.api.tasks.license_expiration_task.delay')
+    @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
+    def test_non_revocable_original_status_triggers_no_unenrollment(
+        self,
+        original_status,
+        mock_revoke_user_enrollments_delay,
+        mock_license_expiration_delay,
+    ):
+        """
+        Only ACTIVATED and ASSIGNED licenses can carry licensed enrollments, so any other
+        original status must not queue an unenrollment.
+        """
+        revoked_license = LicenseFactory.create(
+            status=constants.REVOKED,
+            subscription_plan=SubscriptionPlanFactory.create(),
+            lms_user_id=123,
+        )
+
+        tasks.execute_post_revocation_tasks(
+            revoked_license=revoked_license,
+            original_status=original_status,
+        )
+
+        mock_revoke_user_enrollments_delay.assert_not_called()
+        mock_license_expiration_delay.assert_not_called()
+
     @mock.patch('license_manager.apps.api.tasks.send_revocation_cap_notification_email_task.delay')
     @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
     def test_execute_post_revocation_tasks_idempotent_for_same_correlation(

@@ -1376,9 +1376,20 @@ class License(TimeStampedModel):
 
     def clear_historical_pii(self):
         """
-        Helper function to remove pii (user_email & lms_user_id) from the license's historical records.
+        Helper function to remove pii (user_email & lms_user_id) from the license's historical records,
+        including the learner identifiers on its ``LicenseAction`` audit rows. The audit rows themselves are kept.
         """
         self.history.update(user_email=None)  # pylint: disable=no-member
+        actions = list(self.actions.all())  # pylint: disable=no-member
+        for action in actions:
+            action.learner_email = None
+            action.learner_lms_user_id = None
+            action.learner_external_key = None
+            action.metadata.pop('learner_external_key', None)
+        LicenseAction.objects.bulk_update(
+            actions,
+            ['learner_email', 'learner_lms_user_id', 'learner_external_key', 'metadata'],
+        )
 
     def reset_to_unassigned(self):
         """
@@ -1632,8 +1643,7 @@ class License(TimeStampedModel):
         if activated_license:
             for _license in duplicate_licenses:
                 if _license != activated_license:
-                    _license.reset_to_unassigned()
-                    _license.save()
+                    cls._unassign_duplicate_license(_license)
             return activated_license
 
         # Now there should be only assigned licenses to deal with.
@@ -1645,10 +1655,24 @@ class License(TimeStampedModel):
             reverse=True,
         )
         for duplicate in sorted_licenses[1:]:
-            duplicate.reset_to_unassigned()
-            duplicate.save()
+            cls._unassign_duplicate_license(duplicate)
 
         return sorted_licenses[0]
+
+    @staticmethod
+    def _unassign_duplicate_license(duplicate_license):
+        """
+        Resets a duplicate license to unassigned and deletes its source, if it has one.
+
+        Both happen in one transaction so that a concurrent assignment can't pick up the
+        released license, and have its new source deleted here, before the source is gone.
+        """
+        with transaction.atomic():
+            # Filter rather than ``delete_source()``, which logs a warning when there's no source:
+            # the common case, since sources only exist for assignments made with ``user_sfids``.
+            SubscriptionLicenseSource.objects.filter(license=duplicate_license).delete()
+            duplicate_license.reset_to_unassigned()
+            duplicate_license.save()
 
 
 class LicenseTransferJob(TimeStampedModel):

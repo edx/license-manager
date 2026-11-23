@@ -150,12 +150,17 @@ license's *original* status (ENT-12360):
   This is **user + enterprise scoped**, not license scoped: it terminates every licensed enrollment the
   learner has in that enterprise. That is intentional, because renewals mint a *new* license UUID while
   existing enrollments keep the old one.
-- `ASSIGNED` (pending) -> `revoke_course_enrollments_for_license_task` -> `.../bulk_licensed_enrollments_expiration/`
-  with `[license_uuid]`. Pending licenses can carry enrollments (admin Bulk Enrollment), may have no
-  `lms_user_id` (which `license_revoke` rejects with a 400), and must not touch enrollments the learner holds
-  under another license. Already-revoked licensed enrollments are skipped downstream.
+- `ASSIGNED` (pending) -> `license_expiration_task` -> `.../bulk_licensed_enrollments_expiration/`
+  with the revoked license's UUID **plus every UUID in its renewal chain** (followed via `License.renewed_from`).
+  Pending licenses can carry enrollments (admin Bulk Enrollment), may have no `lms_user_id` (which
+  `license_revoke` rejects with a 400), and must not touch enrollments the learner holds under another
+  license. The chain matters because renewal copies pending licenses to new UUIDs too, and enrollments keep
+  the UUID they were made under. `license_expiration_task` runs on `LoggedTaskWithRetry`, so transient
+  edx-enterprise failures (including its 422 for partial failure) are retried; this is safe because
+  already-revoked licensed enrollments are skipped downstream.
 - Any other status (for example, already `REVOKED`) triggers no unenrollment, and `revoke_license` raises
-  `LicenseRevocationError` first.
+  `LicenseRevocationError` first. If you add a status to `REVOCABLE_LICENSE_STATUSES`, add a matching branch:
+  `test_every_revocable_status_triggers_unenrollment` fails until you do.
 
 Known gap: edx-enterprise `PendingEnrollment` rows (bulk-enrolled learners with no LMS account yet) are not
 cleaned up by either endpoint.

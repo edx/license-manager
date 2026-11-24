@@ -765,19 +765,24 @@ class RevokeAllLicensesTaskTests(TestCase):
         assert mock_execute_post_revocation_tasks.call_count == 0
 
     @ddt.data(
-        {'original_status': constants.ACTIVATED, 'revoke_max_percentage': 200},
-        {'original_status': constants.ACTIVATED, 'revoke_max_percentage': 100},
-        {'original_status': constants.ASSIGNED, 'revoke_max_percentage': 100}
+        {'original_status': constants.ACTIVATED, 'revoke_max_percentage': 200, 'lms_user_id': 123},
+        {'original_status': constants.ACTIVATED, 'revoke_max_percentage': 100, 'lms_user_id': 123},
+        {'original_status': constants.ASSIGNED, 'revoke_max_percentage': 100, 'lms_user_id': 123},
+        # A pending learner usually has no lms_user_id yet (ENT-12360).
+        {'original_status': constants.ASSIGNED, 'revoke_max_percentage': 100, 'lms_user_id': None},
     )
     @ddt.unpack
+    @mock.patch('license_manager.apps.api.tasks.license_expiration_task.delay')
     @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
     @mock.patch('license_manager.apps.api.tasks.send_revocation_cap_notification_email_task.delay')
     def test_execute_post_revocation_tasks(
         self,
         mock_cap_email_delay,
-        mock_revoke_enrollments_delay,
+        mock_revoke_user_enrollments_delay,
+        mock_license_expiration_delay,
         original_status,
-        revoke_max_percentage
+        revoke_max_percentage,
+        lms_user_id,
     ):
         agreement = CustomerAgreementFactory.create(
             enterprise_customer_uuid=uuid4(),
@@ -793,17 +798,29 @@ class RevokeAllLicensesTaskTests(TestCase):
         original_license = LicenseFactory.create(
             status=original_status,
             subscription_plan=subscription_plan,
-            lms_user_id=123,
+            lms_user_id=lms_user_id,
         )
 
         with freezegun.freeze_time(self.now):
             revocation_result = revoke_license(original_license)
             tasks.execute_post_revocation_tasks(**revocation_result)
 
-        is_license_revoked = original_status == constants.ACTIVATED
-        revoke_limit_reached = is_license_revoked and revoke_max_percentage <= 100
+        was_activated = original_status == constants.ACTIVATED
+        revoke_limit_reached = was_activated and revoke_max_percentage <= 100
 
-        self.assertEqual(mock_revoke_enrollments_delay.called, is_license_revoked)
+        # ACTIVATED -> user-scoped unenrollment (existing behavior preserved).
+        # ASSIGNED  -> license-scoped unenrollment (ENT-12360).
+        if was_activated:
+            mock_revoke_user_enrollments_delay.assert_called_once_with(
+                user_id=lms_user_id,
+                enterprise_id=str(agreement.enterprise_customer_uuid),
+            )
+            mock_license_expiration_delay.assert_not_called()
+        else:
+            mock_license_expiration_delay.assert_called_once_with(
+                license_uuids=[str(original_license.uuid)],
+            )
+            mock_revoke_user_enrollments_delay.assert_not_called()
         self.assertEqual(mock_cap_email_delay.called, revoke_limit_reached)
 
         action = LicenseAction.objects.get(license=original_license)
@@ -811,6 +828,45 @@ class RevokeAllLicensesTaskTests(TestCase):
         assert action.actor_type == constants.LicenseActorType.SYSTEM
         assert action.source == constants.LicenseActionSource.CELERY_TASK
         assert action.metadata['original_status'] == original_status
+
+    @mock.patch('license_manager.apps.api.tasks.license_expiration_task.delay')
+    def test_execute_post_revocation_tasks_renewed_pending_license_includes_renewal_chain(
+        self,
+        mock_license_expiration_delay,
+    ):
+        """
+        Renewal copies a pending license into a new row with a new UUID, while enrollments
+        keep the UUID they were made under. Revoking the newest license in the chain must
+        send the UUIDs of every license it was renewed from.
+        """
+        first_license, second_license, current_license = LicenseFactory.create_batch(3, status=constants.ASSIGNED)
+        first_license.renewed_to = second_license
+        first_license.save()
+        second_license.renewed_to = current_license
+        second_license.save()
+
+        revocation_result = revoke_license(current_license)
+        tasks.execute_post_revocation_tasks(**revocation_result)
+
+        mock_license_expiration_delay.assert_called_once_with(
+            license_uuids=[str(current_license.uuid), str(second_license.uuid), str(first_license.uuid)],
+        )
+
+    @ddt.data(*[status for status, _ in constants.LICENSE_STATUS_CHOICES])
+    @mock.patch('license_manager.apps.api.tasks.license_expiration_task.delay')
+    @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')
+    def test_unenrollment_queued_only_for_revocable_statuses(
+        self, original_status, mock_revoke_user_enrollments_delay, mock_license_expiration_delay,
+    ):
+        """
+        Every revocable status queues an unenrollment (add a branch when you add one); no other status does.
+        """
+        tasks.execute_post_revocation_tasks(
+            revoked_license=LicenseFactory.create(status=constants.REVOKED, lms_user_id=123),
+            original_status=original_status,
+        )
+        queued = mock_revoke_user_enrollments_delay.called or mock_license_expiration_delay.called
+        assert queued == (original_status in constants.REVOCABLE_LICENSE_STATUSES)
 
     @mock.patch('license_manager.apps.api.tasks.send_revocation_cap_notification_email_task.delay')
     @mock.patch('license_manager.apps.api.tasks.revoke_course_enrollments_for_user_task.delay')

@@ -141,6 +141,21 @@ Auto-assignment based on email domains requires careful validation:
 - Consider case-sensitivity in email addresses
 - Validate domain allowlists before assignment
 
+### Course Unenrollment on License Revocation
+
+`execute_post_revocation_tasks` (`apps/api/tasks.py`) picks the edx-enterprise endpoint by the license's original status:
+
+- `ACTIVATED` -> `revoke_course_enrollments_for_user_task` (`license_revoke/`). User + enterprise scoped, so it also
+  catches enrollments made under the learner's earlier (renewed) licenses.
+- `ASSIGNED` -> `license_expiration_task` (`bulk_licensed_enrollments_expiration/`) with the license UUID and every UUID
+  in its `renewed_from` chain. License-scoped because pending licenses often have no `lms_user_id` (`license_revoke`
+  returns 400) and other licenses' enrollments must be left alone. Retries are safe: already-revoked enrollments are skipped.
+  It shares that task with plan expiration, so it logs `Expiration of course enrollments ...`, not `Revocation of ...`.
+- No other status unenrolls. A status added to `REVOCABLE_LICENSE_STATUSES` needs a new branch
+  (`test_unenrollment_queued_only_for_revocable_statuses` enforces this).
+
+Known gap: edx-enterprise `PendingEnrollment` rows (learners with no LMS account yet) are not cleaned up by either endpoint.
+
 ### Renewal Processing Timing
 
 Renewal processing is time-sensitive:

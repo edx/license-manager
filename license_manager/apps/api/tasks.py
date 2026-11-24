@@ -22,6 +22,7 @@ from license_manager.apps.api_client.braze import BrazeApiClient
 from license_manager.apps.api_client.enterprise import EnterpriseApiClient
 from license_manager.apps.subscriptions.constants import (
     ACTIVATED,
+    ASSIGNED,
     ASSIGNMENT_EMAIL_BATCH_SIZE,
     DAYS_BEFORE_INITIAL_UTILIZATION_EMAIL_SENT,
     ENTERPRISE_BRAZE_ALIAS_LABEL,
@@ -402,6 +403,15 @@ def revoke_course_enrollments_for_user_task(user_id, enterprise_id):
         )
 
 
+def _get_renewal_chain_license_uuids(license_obj):
+    """Returns the UUIDs of license_obj and every license it was renewed from, newest first."""
+    license_uuids = []
+    while license_obj:
+        license_uuids.append(str(license_obj.uuid))
+        license_obj = license_obj.renewed_from
+    return license_uuids
+
+
 def execute_post_revocation_tasks(
     revoked_license,
     original_status,
@@ -415,7 +425,8 @@ def execute_post_revocation_tasks(
     Executes a set of tasks after a license has been revoked.
 
     Tasks:
-        - Revoke enrollments if the License has an original status of ACTIVATED.
+        - Revoke enrollments if the License has an original status of ACTIVATED (user-scoped)
+          or ASSIGNED (scoped to the revoked license and the licenses it was renewed from).
         - Send email notification to ECS if the Subscription Plan has reached its revocation cap.
     """
     action_metadata = {
@@ -461,13 +472,16 @@ def execute_post_revocation_tasks(
             revoked_license.uuid,
         )
 
-    # We should only need to revoke enrollments if the License has an original
-    # status of ACTIVATED, pending users shouldn't have any enrollments.
     if original_status == ACTIVATED:
+        # User-scoped revocation: also catches enrollments made under a prior (renewed)
+        # license of this learner, since renewal mints a new license UUID.
         revoke_course_enrollments_for_user_task.delay(
             user_id=revoked_license.lms_user_id,
             enterprise_id=str(revoked_license.subscription_plan.enterprise_customer_uuid),
         )
+    elif original_status == ASSIGNED:
+        # License-scoped, incl. renewal chain: see docs/architecture-patterns.md.
+        license_expiration_task.delay(license_uuids=_get_renewal_chain_license_uuids(revoked_license))
 
     if not revoked_license.subscription_plan.has_revocations_remaining:
         # Send email notification to ECS that the Subscription Plan has reached its revocation cap

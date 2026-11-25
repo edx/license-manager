@@ -46,12 +46,12 @@ bleach[css]==6.4.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
-boto3==1.44.9
+boto3==1.44.11
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   django-ses
-botocore==1.44.9
+botocore==1.44.11
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -74,7 +74,7 @@ cffi==2.1.1
     #   -r requirements/test.txt
     #   cryptography
     #   pynacl
-charset-normalizer==3.5.2
+charset-normalizer==3.5.3
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -117,7 +117,7 @@ code-annotations==3.1.0
     #   -r requirements/test.txt
     #   edx-lint
     #   edx-toggles
-coverage[toml]==7.17.4
+coverage[toml]==7.17.5
     # via
     #   -r requirements/test.txt
     #   pytest-cov
@@ -408,7 +408,7 @@ oauthlib==4.0.1
     #   -r requirements/test.txt
     #   requests-oauthlib
     #   social-auth-core
-packaging==26.3
+packaging==26.4
     # via
     #   -r requirements/test.txt
     #   pytest
@@ -539,7 +539,7 @@ pyyaml==6.0.4
     #   code-annotations
     #   drf-spectacular
     #   edx-i18n-tools
-redis==8.1.0
+redis==8.2.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -638,7 +638,7 @@ tinycss2==1.5.1
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
     #   bleach
-tomlkit==0.15.2
+tomlkit==0.15.3
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt
@@ -678,7 +678,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.9.4
+wcwidth==0.9.5
     # via
     #   -r requirements/quality.txt
     #   -r requirements/test.txt

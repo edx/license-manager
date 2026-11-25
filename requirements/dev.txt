@@ -36,11 +36,11 @@ billiard==4.3.2
     #   celery
 bleach[css]==6.4.0
     # via -r requirements/validation.txt
-boto3==1.44.9
+boto3==1.44.11
     # via
     #   -r requirements/validation.txt
     #   django-ses
-botocore==1.44.9
+botocore==1.44.11
     # via
     #   -r requirements/validation.txt
     #   boto3
@@ -63,7 +63,7 @@ cffi==2.1.1
     #   -r requirements/validation.txt
     #   cryptography
     #   pynacl
-charset-normalizer==3.5.2
+charset-normalizer==3.5.3
     # via
     #   -r requirements/validation.txt
     #   requests
@@ -101,7 +101,7 @@ code-annotations==3.1.0
     #   -r requirements/validation.txt
     #   edx-lint
     #   edx-toggles
-coverage[toml]==7.17.4
+coverage[toml]==7.17.5
     # via
     #   -r requirements/validation.txt
     #   pytest-cov
@@ -356,7 +356,7 @@ oauthlib==4.0.1
     #   -r requirements/validation.txt
     #   requests-oauthlib
     #   social-auth-core
-packaging==26.3
+packaging==26.4
     # via
     #   -r requirements/pip-tools.txt
     #   -r requirements/validation.txt
@@ -488,7 +488,7 @@ pyyaml==6.0.4
     #   code-annotations
     #   drf-spectacular
     #   edx-i18n-tools
-redis==8.1.0
+redis==8.2.0
     # via -r requirements/validation.txt
 referencing==0.37.0
     # via
@@ -569,7 +569,7 @@ tinycss2==1.5.1
     # via
     #   -r requirements/validation.txt
     #   bleach
-tomlkit==0.15.2
+tomlkit==0.15.3
     # via
     #   -r requirements/validation.txt
     #   edx-lint
@@ -604,7 +604,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.9.4
+wcwidth==0.9.5
     # via
     #   -r requirements/validation.txt
     #   prompt-toolkit

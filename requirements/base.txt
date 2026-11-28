@@ -25,9 +25,9 @@ billiard==4.3.2
     # via celery
 bleach[css]==6.4.0
     # via -r requirements/base.in
-boto3==1.44.9
+boto3==1.44.13
     # via django-ses
-botocore==1.44.9
+botocore==1.44.13
     # via
     #   boto3
     #   s3transfer
@@ -42,7 +42,7 @@ cffi==2.1.1
     # via
     #   cryptography
     #   pynacl
-charset-normalizer==3.5.2
+charset-normalizer==3.5.3
     # via requests
 click==8.5.1
     # via
@@ -130,7 +130,7 @@ django-waffle==5.0.0
     #   edx-django-utils
     #   edx-drf-extensions
     #   edx-toggles
-djangoql==0.19.1
+djangoql==0.19.2
     # via -r requirements/base.in
 djangorestframework==3.18.3
     # via
@@ -224,7 +224,7 @@ pyjwt[crypto]==2.15.1
     #   edx-drf-extensions
     #   edx-rest-api-client
     #   social-auth-core
-pymongo==4.20.1
+pymongo==4.20.2
     # via edx-opaque-keys
 pynacl==1.6.2
     # via edx-django-utils
@@ -243,7 +243,7 @@ pyyaml==6.0.4
     # via
     #   code-annotations
     #   drf-spectacular
-redis==8.1.0
+redis==8.2.0
     # via -r requirements/base.in
 referencing==0.37.0
     # via
@@ -318,7 +318,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.9.4
+wcwidth==0.9.5
     # via prompt-toolkit
 webencodings==0.6.1
     # via
